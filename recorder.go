@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lightstep-tracer-go/lightstep_thrift"
-	"github.com/lightstep-tracer-go/thrift_0_9_2/lib/go/thrift"
-	"github.com/lightstep-tracer-go/truncator"
+	"github.com/lightstephq/lightstep-tracer-go/lightstep_thrift"
+	"github.com/lightstephq/lightstep-tracer-go/thrift_0_9_2/lib/go/thrift"
+	"github.com/lightstephq/lightstep-tracer-go/truncator"
 	"github.com/opentracing/basictracer-go"
 	ot "github.com/opentracing/opentracing-go"
 )
