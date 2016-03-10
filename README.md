@@ -15,7 +15,7 @@ godocs](https://godoc.org/github.com/opentracing/opentracing-go).
 ## Installation
 
 ```
-$ go get 'github.com/lightstephq/lightstep-tracer-go'
+$ go get 'github.com/lightstep/lightstep-tracer-go'
 ```
 
 ## Binding OpenTracing to LightStep's `Tracer`
@@ -27,7 +27,7 @@ the LightStep `opentracing.Tracer` implementation and/or set the global
 ```
 import (
     "github.com/opentracing/opentracing-go"
-    "github.com/lightstephq/lightstep-tracer-go"
+    "github.com/lightstep/lightstep-tracer-go"
 )
 
 func main() {
