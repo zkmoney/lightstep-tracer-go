@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -282,14 +283,14 @@ func (r *Recorder) Flush() {
 		// TODO implement baggage
 
 		joinIds = append(joinIds, &lightstep_thrift.TraceJoinId{TraceGUIDKey,
-			fmt.Sprint(raw.TraceID)})
+			strconv.FormatInt(raw.TraceID, 16)})
 		if raw.ParentSpanID != 0 {
 			attributes = append(attributes, &lightstep_thrift.KeyValue{ParentSpanGUIDKey,
-				fmt.Sprint(raw.ParentSpanID)})
+				strconv.FormatInt(raw.ParentSpanID, 16)})
 		}
 
 		recs[i] = &lightstep_thrift.SpanRecord{
-			SpanGuid:       thrift.StringPtr(fmt.Sprint(raw.SpanID)),
+			SpanGuid:       thrift.StringPtr(strconv.FormatInt(raw.SpanID, 16)),
 			SpanName:       thrift.StringPtr(raw.Operation),
 			JoinIds:        joinIds,
 			OldestMicros:   thrift.Int64Ptr(raw.Start.UnixNano() / 1000),
