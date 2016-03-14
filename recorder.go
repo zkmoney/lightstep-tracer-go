@@ -243,7 +243,7 @@ func (r *Recorder) Flush() {
 		var joinIds []*lightstep_thrift.TraceJoinId
 		var attributes []*lightstep_thrift.KeyValue
 		for key, value := range raw.Tags {
-			if strings.HasPrefix("join:", key) {
+			if strings.HasPrefix(key, "join:") {
 				joinIds = append(joinIds, &lightstep_thrift.TraceJoinId{key, fmt.Sprint(value)})
 			} else {
 				attributes = append(attributes, &lightstep_thrift.KeyValue{key, fmt.Sprint(value)})
