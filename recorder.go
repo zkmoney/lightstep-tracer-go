@@ -103,7 +103,7 @@ type Options struct {
 // collector.
 func NewTracer(opts Options) ot.Tracer {
 	options := basictracer.DefaultOptions()
-	options.ShouldSample = func(_ int64) bool { return true }
+	options.ShouldSample = func(_ uint64) bool { return true }
 	options.Recorder = NewRecorder(opts)
 	return basictracer.NewWithOptions(options)
 }
@@ -288,14 +288,14 @@ func (r *Recorder) Flush() {
 		// TODO implement baggage
 
 		joinIds = append(joinIds, &lightstep_thrift.TraceJoinId{TraceGUIDKey,
-			strconv.FormatInt(raw.TraceID, 16)})
+			strconv.FormatUint(raw.TraceID, 16)})
 		if raw.ParentSpanID != 0 {
 			attributes = append(attributes, &lightstep_thrift.KeyValue{ParentSpanGUIDKey,
-				strconv.FormatInt(raw.ParentSpanID, 16)})
+				strconv.FormatUint(raw.ParentSpanID, 16)})
 		}
 
 		recs[i] = &lightstep_thrift.SpanRecord{
-			SpanGuid:       thrift.StringPtr(strconv.FormatInt(raw.SpanID, 16)),
+			SpanGuid:       thrift.StringPtr(strconv.FormatUint(raw.SpanID, 16)),
 			SpanName:       thrift.StringPtr(raw.Operation),
 			JoinIds:        joinIds,
 			OldestMicros:   thrift.Int64Ptr(raw.Start.UnixNano() / 1000),
