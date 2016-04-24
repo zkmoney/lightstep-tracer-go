@@ -1256,6 +1256,7 @@ type SpanRecord struct {
 	Attributes []*KeyValue  `thrift:"attributes,8" json:"attributes"`
 	ErrorFlag  *bool        `thrift:"error_flag,9" json:"error_flag"`
 	LogRecords []*LogRecord `thrift:"log_records,10" json:"log_records"`
+	TraceGuid  *string      `thrift:"trace_guid,11" json:"trace_guid"`
 }
 
 func NewSpanRecord() *SpanRecord {
@@ -1269,6 +1270,15 @@ func (p *SpanRecord) GetSpanGuid() string {
 		return SpanRecord_SpanGuid_DEFAULT
 	}
 	return *p.SpanGuid
+}
+
+var SpanRecord_TraceGuid_DEFAULT string
+
+func (p *SpanRecord) GetTraceGuid() string {
+	if !p.IsSetTraceGuid() {
+		return SpanRecord_TraceGuid_DEFAULT
+	}
+	return *p.TraceGuid
 }
 
 var SpanRecord_RuntimeGuid_DEFAULT string
@@ -1337,6 +1347,10 @@ func (p *SpanRecord) IsSetSpanGuid() bool {
 	return p.SpanGuid != nil
 }
 
+func (p *SpanRecord) IsSetTraceGuid() bool {
+	return p.TraceGuid != nil
+}
+
 func (p *SpanRecord) IsSetRuntimeGuid() bool {
 	return p.RuntimeGuid != nil
 }
@@ -1384,6 +1398,10 @@ func (p *SpanRecord) Read(iprot thrift.TProtocol) error {
 		switch fieldId {
 		case 1:
 			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 11:
+			if err := p.ReadField11(iprot); err != nil {
 				return err
 			}
 		case 2:
@@ -1438,6 +1456,15 @@ func (p *SpanRecord) ReadField1(iprot thrift.TProtocol) error {
 		return fmt.Errorf("error reading field 1: %s", err)
 	} else {
 		p.SpanGuid = &v
+	}
+	return nil
+}
+
+func (p *SpanRecord) ReadField11(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return fmt.Errorf("error reading field 11: %s", err)
+	} else {
+		p.TraceGuid = &v
 	}
 	return nil
 }
@@ -1576,6 +1603,9 @@ func (p *SpanRecord) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField10(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField11(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -1741,6 +1771,21 @@ func (p *SpanRecord) writeField10(oprot thrift.TProtocol) (err error) {
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
 			return fmt.Errorf("%T write field end error 10:log_records: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *SpanRecord) writeField11(oprot thrift.TProtocol) (err error) {
+	if p.IsSetTraceGuid() {
+		if err := oprot.WriteFieldBegin("trace_guid", thrift.STRING, 11); err != nil {
+			return fmt.Errorf("%T write field begin error 11:trace_guid: %s", p, err)
+		}
+		if err := oprot.WriteString(string(*p.TraceGuid)); err != nil {
+			return fmt.Errorf("%T.trace_guid (11) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 11:trace_guid: %s", p, err)
 		}
 	}
 	return err
