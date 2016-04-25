@@ -31,19 +31,14 @@ const (
 	defaultMaxReportingPeriod = 2500 * time.Millisecond
 	minReportingPeriod        = 500 * time.Millisecond
 
-	// TraceGUIDKey is the tag key used to define traces which are
-	// joined based on a GUID.
-	TraceGUIDKey = "join:trace_guid"
 	// ParentSpanGUIDKey is the tag key used to record the relationship
 	// between child and parent spans.
 	ParentSpanGUIDKey = "parent_span_guid"
 
 	ComponentNameKey = "component_name"
-	GUIDKey          = "guid"
-	ComponentGUIDKey = "guid" // TODO remove legacy key
+	GUIDKey          = "guid" // <- runtime guid, not span guid
 	HostnameKey      = "hostname"
 	CommandLineKey   = "command_line"
-	CmdLineKey       = "command_line" // TODO remove legacy key
 
 	ellipsis = "…"
 )
@@ -286,9 +281,6 @@ func (r *Recorder) Flush() {
 		}
 
 		// TODO implement baggage
-
-		joinIds = append(joinIds, &lightstep_thrift.TraceJoinId{TraceGUIDKey,
-			strconv.FormatUint(raw.TraceID, 16)})
 		if raw.ParentSpanID != 0 {
 			attributes = append(attributes, &lightstep_thrift.KeyValue{ParentSpanGUIDKey,
 				strconv.FormatUint(raw.ParentSpanID, 16)})
@@ -296,6 +288,7 @@ func (r *Recorder) Flush() {
 
 		recs[i] = &lightstep_thrift.SpanRecord{
 			SpanGuid:       thrift.StringPtr(strconv.FormatUint(raw.SpanID, 16)),
+			TraceGuid:      thrift.StringPtr(strconv.FormatUint(raw.TraceID, 16)),
 			SpanName:       thrift.StringPtr(raw.Operation),
 			JoinIds:        joinIds,
 			OldestMicros:   thrift.Int64Ptr(raw.Start.UnixNano() / 1000),
