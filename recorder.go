@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -101,6 +102,21 @@ func NewTracer(opts Options) ot.Tracer {
 	options.ShouldSample = func(_ uint64) bool { return true }
 	options.Recorder = NewRecorder(opts)
 	return basictracer.NewWithOptions(options)
+}
+
+func FlushLightStepTracer(lsTracer ot.Tracer) error {
+	basicTracer, ok := lsTracer.(basictracer.Tracer)
+	if !ok {
+		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(lsTracer))
+	}
+
+	basicRecorder := basicTracer.Options().Recorder
+	lsRecorder, ok := basicRecorder.(*Recorder)
+	if !ok {
+		return fmt.Errorf("Not a LightStep Recorder type: %v", reflect.TypeOf(basicRecorder))
+	}
+	lsRecorder.Flush()
+	return nil
 }
 
 // Recorder buffers spans and forwards them to a LightStep collector.
