@@ -91,16 +91,16 @@ func (p *ReportingServiceClient) recvReport() (value *ReportResponse, err error)
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error10 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error11 error
-		error11, err = error10.Read(iprot)
+		error12 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error13 error
+		error13, err = error12.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error11
+		err = error13
 		return
 	}
 	if p.SeqId != seqId {
@@ -138,9 +138,9 @@ func (p *ReportingServiceProcessor) ProcessorMap() map[string]thrift.TProcessorF
 
 func NewReportingServiceProcessor(handler ReportingService) *ReportingServiceProcessor {
 
-	self12 := &ReportingServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
-	self12.processorMap["Report"] = &reportingServiceProcessorReport{handler: handler}
-	return self12
+	self14 := &ReportingServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self14.processorMap["Report"] = &reportingServiceProcessorReport{handler: handler}
+	return self14
 }
 
 func (p *ReportingServiceProcessor) Process(iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
@@ -153,12 +153,12 @@ func (p *ReportingServiceProcessor) Process(iprot, oprot thrift.TProtocol) (succ
 	}
 	iprot.Skip(thrift.STRUCT)
 	iprot.ReadMessageEnd()
-	x13 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	x15 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
 	oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
-	x13.Write(oprot)
+	x15.Write(oprot)
 	oprot.WriteMessageEnd()
 	oprot.Flush()
-	return false, x13
+	return false, x15
 
 }
 
