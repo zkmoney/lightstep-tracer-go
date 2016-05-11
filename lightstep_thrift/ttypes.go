@@ -2229,6 +2229,299 @@ func (p *SampleCount) String() string {
 	return fmt.Sprintf("SampleCount(%+v)", *p)
 }
 
+type MetricsSample struct {
+	Name        string   `thrift:"name,1,required" json:"name"`
+	Int64Value  *int64   `thrift:"int64_value,2" json:"int64_value"`
+	DoubleValue *float64 `thrift:"double_value,3" json:"double_value"`
+}
+
+func NewMetricsSample() *MetricsSample {
+	return &MetricsSample{}
+}
+
+func (p *MetricsSample) GetName() string {
+	return p.Name
+}
+
+var MetricsSample_Int64Value_DEFAULT int64
+
+func (p *MetricsSample) GetInt64Value() int64 {
+	if !p.IsSetInt64Value() {
+		return MetricsSample_Int64Value_DEFAULT
+	}
+	return *p.Int64Value
+}
+
+var MetricsSample_DoubleValue_DEFAULT float64
+
+func (p *MetricsSample) GetDoubleValue() float64 {
+	if !p.IsSetDoubleValue() {
+		return MetricsSample_DoubleValue_DEFAULT
+	}
+	return *p.DoubleValue
+}
+func (p *MetricsSample) IsSetInt64Value() bool {
+	return p.Int64Value != nil
+}
+
+func (p *MetricsSample) IsSetDoubleValue() bool {
+	return p.DoubleValue != nil
+}
+
+func (p *MetricsSample) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return fmt.Errorf("%T read error: %s", p, err)
+	}
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return fmt.Errorf("%T field %d read error: %s", p, fieldId, err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
+				return err
+			}
+		case 3:
+			if err := p.ReadField3(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return fmt.Errorf("%T read struct end error: %s", p, err)
+	}
+	return nil
+}
+
+func (p *MetricsSample) ReadField1(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return fmt.Errorf("error reading field 1: %s", err)
+	} else {
+		p.Name = v
+	}
+	return nil
+}
+
+func (p *MetricsSample) ReadField2(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return fmt.Errorf("error reading field 2: %s", err)
+	} else {
+		p.Int64Value = &v
+	}
+	return nil
+}
+
+func (p *MetricsSample) ReadField3(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadDouble(); err != nil {
+		return fmt.Errorf("error reading field 3: %s", err)
+	} else {
+		p.DoubleValue = &v
+	}
+	return nil
+}
+
+func (p *MetricsSample) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("MetricsSample"); err != nil {
+		return fmt.Errorf("%T write struct begin error: %s", p, err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField3(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return fmt.Errorf("write field stop error: %s", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return fmt.Errorf("write struct stop error: %s", err)
+	}
+	return nil
+}
+
+func (p *MetricsSample) writeField1(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("name", thrift.STRING, 1); err != nil {
+		return fmt.Errorf("%T write field begin error 1:name: %s", p, err)
+	}
+	if err := oprot.WriteString(string(p.Name)); err != nil {
+		return fmt.Errorf("%T.name (1) field write error: %s", p, err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return fmt.Errorf("%T write field end error 1:name: %s", p, err)
+	}
+	return err
+}
+
+func (p *MetricsSample) writeField2(oprot thrift.TProtocol) (err error) {
+	if p.IsSetInt64Value() {
+		if err := oprot.WriteFieldBegin("int64_value", thrift.I64, 2); err != nil {
+			return fmt.Errorf("%T write field begin error 2:int64_value: %s", p, err)
+		}
+		if err := oprot.WriteI64(int64(*p.Int64Value)); err != nil {
+			return fmt.Errorf("%T.int64_value (2) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 2:int64_value: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *MetricsSample) writeField3(oprot thrift.TProtocol) (err error) {
+	if p.IsSetDoubleValue() {
+		if err := oprot.WriteFieldBegin("double_value", thrift.DOUBLE, 3); err != nil {
+			return fmt.Errorf("%T write field begin error 3:double_value: %s", p, err)
+		}
+		if err := oprot.WriteDouble(float64(*p.DoubleValue)); err != nil {
+			return fmt.Errorf("%T.double_value (3) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 3:double_value: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *MetricsSample) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("MetricsSample(%+v)", *p)
+}
+
+type Metrics struct {
+	Counts []*MetricsSample `thrift:"counts,1" json:"counts"`
+}
+
+func NewMetrics() *Metrics {
+	return &Metrics{}
+}
+
+var Metrics_Counts_DEFAULT []*MetricsSample
+
+func (p *Metrics) GetCounts() []*MetricsSample {
+	return p.Counts
+}
+func (p *Metrics) IsSetCounts() bool {
+	return p.Counts != nil
+}
+
+func (p *Metrics) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return fmt.Errorf("%T read error: %s", p, err)
+	}
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return fmt.Errorf("%T field %d read error: %s", p, fieldId, err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return fmt.Errorf("%T read struct end error: %s", p, err)
+	}
+	return nil
+}
+
+func (p *Metrics) ReadField1(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return fmt.Errorf("error reading list begin: %s", err)
+	}
+	tSlice := make([]*MetricsSample, 0, size)
+	p.Counts = tSlice
+	for i := 0; i < size; i++ {
+		_elem5 := &MetricsSample{}
+		if err := _elem5.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem5, err)
+		}
+		p.Counts = append(p.Counts, _elem5)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return fmt.Errorf("error reading list end: %s", err)
+	}
+	return nil
+}
+
+func (p *Metrics) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("Metrics"); err != nil {
+		return fmt.Errorf("%T write struct begin error: %s", p, err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return fmt.Errorf("write field stop error: %s", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return fmt.Errorf("write struct stop error: %s", err)
+	}
+	return nil
+}
+
+func (p *Metrics) writeField1(oprot thrift.TProtocol) (err error) {
+	if p.IsSetCounts() {
+		if err := oprot.WriteFieldBegin("counts", thrift.LIST, 1); err != nil {
+			return fmt.Errorf("%T write field begin error 1:counts: %s", p, err)
+		}
+		if err := oprot.WriteListBegin(thrift.STRUCT, len(p.Counts)); err != nil {
+			return fmt.Errorf("error writing list begin: %s", err)
+		}
+		for _, v := range p.Counts {
+			if err := v.Write(oprot); err != nil {
+				return fmt.Errorf("%T error writing struct: %s", v, err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return fmt.Errorf("error writing list end: %s", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 1:counts: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *Metrics) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("Metrics(%+v)", *p)
+}
+
 type ReportRequest struct {
 	Runtime *Runtime `thrift:"runtime,1" json:"runtime"`
 	// unused field # 2
@@ -2236,9 +2529,11 @@ type ReportRequest struct {
 	LogRecords            []*LogRecord  `thrift:"log_records,4" json:"log_records"`
 	TimestampOffsetMicros *int64        `thrift:"timestamp_offset_micros,5" json:"timestamp_offset_micros"`
 	// unused field # 6
-	OldestMicros   *int64          `thrift:"oldest_micros,7" json:"oldest_micros"`
-	YoungestMicros *int64          `thrift:"youngest_micros,8" json:"youngest_micros"`
-	Counters       []*NamedCounter `thrift:"counters,9" json:"counters"`
+	OldestMicros    *int64          `thrift:"oldest_micros,7" json:"oldest_micros"`
+	YoungestMicros  *int64          `thrift:"youngest_micros,8" json:"youngest_micros"`
+	Counters        []*NamedCounter `thrift:"counters,9" json:"counters"`
+	InternalLogs    []*LogRecord    `thrift:"internal_logs,10" json:"internal_logs"`
+	InternalMetrics *Metrics        `thrift:"internal_metrics,11" json:"internal_metrics"`
 }
 
 func NewReportRequest() *ReportRequest {
@@ -2298,6 +2593,21 @@ var ReportRequest_Counters_DEFAULT []*NamedCounter
 func (p *ReportRequest) GetCounters() []*NamedCounter {
 	return p.Counters
 }
+
+var ReportRequest_InternalLogs_DEFAULT []*LogRecord
+
+func (p *ReportRequest) GetInternalLogs() []*LogRecord {
+	return p.InternalLogs
+}
+
+var ReportRequest_InternalMetrics_DEFAULT *Metrics
+
+func (p *ReportRequest) GetInternalMetrics() *Metrics {
+	if !p.IsSetInternalMetrics() {
+		return ReportRequest_InternalMetrics_DEFAULT
+	}
+	return p.InternalMetrics
+}
 func (p *ReportRequest) IsSetRuntime() bool {
 	return p.Runtime != nil
 }
@@ -2324,6 +2634,14 @@ func (p *ReportRequest) IsSetYoungestMicros() bool {
 
 func (p *ReportRequest) IsSetCounters() bool {
 	return p.Counters != nil
+}
+
+func (p *ReportRequest) IsSetInternalLogs() bool {
+	return p.InternalLogs != nil
+}
+
+func (p *ReportRequest) IsSetInternalMetrics() bool {
+	return p.InternalMetrics != nil
 }
 
 func (p *ReportRequest) Read(iprot thrift.TProtocol) error {
@@ -2367,6 +2685,14 @@ func (p *ReportRequest) Read(iprot thrift.TProtocol) error {
 			if err := p.ReadField9(iprot); err != nil {
 				return err
 			}
+		case 10:
+			if err := p.ReadField10(iprot); err != nil {
+				return err
+			}
+		case 11:
+			if err := p.ReadField11(iprot); err != nil {
+				return err
+			}
 		default:
 			if err := iprot.Skip(fieldTypeId); err != nil {
 				return err
@@ -2398,11 +2724,11 @@ func (p *ReportRequest) ReadField3(iprot thrift.TProtocol) error {
 	tSlice := make([]*SpanRecord, 0, size)
 	p.SpanRecords = tSlice
 	for i := 0; i < size; i++ {
-		_elem5 := &SpanRecord{}
-		if err := _elem5.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem5, err)
+		_elem6 := &SpanRecord{}
+		if err := _elem6.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem6, err)
 		}
-		p.SpanRecords = append(p.SpanRecords, _elem5)
+		p.SpanRecords = append(p.SpanRecords, _elem6)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2418,11 +2744,11 @@ func (p *ReportRequest) ReadField4(iprot thrift.TProtocol) error {
 	tSlice := make([]*LogRecord, 0, size)
 	p.LogRecords = tSlice
 	for i := 0; i < size; i++ {
-		_elem6 := &LogRecord{}
-		if err := _elem6.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem6, err)
+		_elem7 := &LogRecord{}
+		if err := _elem7.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem7, err)
 		}
-		p.LogRecords = append(p.LogRecords, _elem6)
+		p.LogRecords = append(p.LogRecords, _elem7)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2465,14 +2791,42 @@ func (p *ReportRequest) ReadField9(iprot thrift.TProtocol) error {
 	tSlice := make([]*NamedCounter, 0, size)
 	p.Counters = tSlice
 	for i := 0; i < size; i++ {
-		_elem7 := &NamedCounter{}
-		if err := _elem7.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem7, err)
+		_elem8 := &NamedCounter{}
+		if err := _elem8.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem8, err)
 		}
-		p.Counters = append(p.Counters, _elem7)
+		p.Counters = append(p.Counters, _elem8)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
+	}
+	return nil
+}
+
+func (p *ReportRequest) ReadField10(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return fmt.Errorf("error reading list begin: %s", err)
+	}
+	tSlice := make([]*LogRecord, 0, size)
+	p.InternalLogs = tSlice
+	for i := 0; i < size; i++ {
+		_elem9 := &LogRecord{}
+		if err := _elem9.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem9, err)
+		}
+		p.InternalLogs = append(p.InternalLogs, _elem9)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return fmt.Errorf("error reading list end: %s", err)
+	}
+	return nil
+}
+
+func (p *ReportRequest) ReadField11(iprot thrift.TProtocol) error {
+	p.InternalMetrics = &Metrics{}
+	if err := p.InternalMetrics.Read(iprot); err != nil {
+		return fmt.Errorf("%T error reading struct: %s", p.InternalMetrics, err)
 	}
 	return nil
 }
@@ -2500,6 +2854,12 @@ func (p *ReportRequest) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField9(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField10(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField11(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -2635,6 +2995,44 @@ func (p *ReportRequest) writeField9(oprot thrift.TProtocol) (err error) {
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
 			return fmt.Errorf("%T write field end error 9:counters: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *ReportRequest) writeField10(oprot thrift.TProtocol) (err error) {
+	if p.IsSetInternalLogs() {
+		if err := oprot.WriteFieldBegin("internal_logs", thrift.LIST, 10); err != nil {
+			return fmt.Errorf("%T write field begin error 10:internal_logs: %s", p, err)
+		}
+		if err := oprot.WriteListBegin(thrift.STRUCT, len(p.InternalLogs)); err != nil {
+			return fmt.Errorf("error writing list begin: %s", err)
+		}
+		for _, v := range p.InternalLogs {
+			if err := v.Write(oprot); err != nil {
+				return fmt.Errorf("%T error writing struct: %s", v, err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return fmt.Errorf("error writing list end: %s", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 10:internal_logs: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *ReportRequest) writeField11(oprot thrift.TProtocol) (err error) {
+	if p.IsSetInternalMetrics() {
+		if err := oprot.WriteFieldBegin("internal_metrics", thrift.STRUCT, 11); err != nil {
+			return fmt.Errorf("%T write field begin error 11:internal_metrics: %s", p, err)
+		}
+		if err := p.InternalMetrics.Write(oprot); err != nil {
+			return fmt.Errorf("%T error writing struct: %s", p.InternalMetrics, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 11:internal_metrics: %s", p, err)
 		}
 	}
 	return err
@@ -2836,11 +3234,11 @@ func (p *ReportResponse) ReadField1(iprot thrift.TProtocol) error {
 	tSlice := make([]*Command, 0, size)
 	p.Commands = tSlice
 	for i := 0; i < size; i++ {
-		_elem8 := &Command{}
-		if err := _elem8.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem8, err)
+		_elem10 := &Command{}
+		if err := _elem10.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem10, err)
 		}
-		p.Commands = append(p.Commands, _elem8)
+		p.Commands = append(p.Commands, _elem10)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2864,13 +3262,13 @@ func (p *ReportResponse) ReadField3(iprot thrift.TProtocol) error {
 	tSlice := make([]string, 0, size)
 	p.Errors = tSlice
 	for i := 0; i < size; i++ {
-		var _elem9 string
+		var _elem11 string
 		if v, err := iprot.ReadString(); err != nil {
 			return fmt.Errorf("error reading field 0: %s", err)
 		} else {
-			_elem9 = v
+			_elem11 = v
 		}
-		p.Errors = append(p.Errors, _elem9)
+		p.Errors = append(p.Errors, _elem11)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
