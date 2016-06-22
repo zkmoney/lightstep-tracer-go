@@ -313,12 +313,22 @@ func (r *Recorder) Flush() {
 			LogRecords:     logs,
 		}
 	}
+
+	spansDropped := int64(r.counters.droppedSpans)
+	metrics := lightstep_thrift.Metrics{
+		Counts: []*lightstep_thrift.MetricsSample{
+			&lightstep_thrift.MetricsSample{
+				Name:       "spans.dropped",
+				Int64Value: &spansDropped,
+			},
+		},
+	}
 	req := &lightstep_thrift.ReportRequest{
-		OldestMicros:   thrift.Int64Ptr(r.reportOldest.UnixNano() / 1000),
-		YoungestMicros: thrift.Int64Ptr(r.reportYoungest.UnixNano() / 1000),
-		Runtime:        r.thriftRuntime(),
-		SpanRecords:    recs,
-		Counters:       r.counters.toThrift(),
+		OldestMicros:    thrift.Int64Ptr(r.reportOldest.UnixNano() / 1000),
+		YoungestMicros:  thrift.Int64Ptr(r.reportYoungest.UnixNano() / 1000),
+		Runtime:         r.thriftRuntime(),
+		SpanRecords:     recs,
+		InternalMetrics: &metrics,
 	}
 
 	// Do *not* wait until the report RPC finishes to clear the buffer.
