@@ -134,7 +134,7 @@ type Recorder struct {
 
 	// buffered data
 	buffer   spansBuffer
-	counters counterSet
+	counters counterSet // The unreported count
 
 	lastReportAttempt  time.Time
 	maxReportingPeriod time.Duration
@@ -230,7 +230,7 @@ func (r *Recorder) RecordSpan(raw basictracer.RawSpan) {
 		return
 	}
 
-	r.counters.droppedSpans += r.buffer.addSpans([]basictracer.RawSpan{raw})
+	r.counters.droppedSpans += int64(r.buffer.addSpans([]basictracer.RawSpan{raw}))
 }
 
 func (r *Recorder) Flush() {
@@ -314,12 +314,13 @@ func (r *Recorder) Flush() {
 		}
 	}
 
-	spansDropped := int64(r.counters.droppedSpans)
+	droppedPending := int64(r.counters.droppedSpans)
+	r.counters.droppedSpans = 0
 	metrics := lightstep_thrift.Metrics{
 		Counts: []*lightstep_thrift.MetricsSample{
 			&lightstep_thrift.MetricsSample{
 				Name:       "spans.dropped",
-				Int64Value: &spansDropped,
+				Int64Value: &droppedPending,
 			},
 		},
 	}
@@ -357,8 +358,8 @@ func (r *Recorder) Flush() {
 	r.reportInFlight = false
 	if err != nil {
 		// Restore the records that did not get sent correctly
-		r.counters.droppedSpans += r.buffer.addSpans(rawSpans)
-
+		r.counters.droppedSpans += int64(r.buffer.addSpans(rawSpans))
+		r.counters.droppedSpans += droppedPending
 		r.lock.Unlock()
 		return
 	}
