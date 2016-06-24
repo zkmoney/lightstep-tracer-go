@@ -2409,6 +2409,7 @@ func (p *MetricsSample) String() string {
 
 type Metrics struct {
 	Counts []*MetricsSample `thrift:"counts,1" json:"counts"`
+	Gauges []*MetricsSample `thrift:"gauges,2" json:"gauges"`
 }
 
 func NewMetrics() *Metrics {
@@ -2420,8 +2421,18 @@ var Metrics_Counts_DEFAULT []*MetricsSample
 func (p *Metrics) GetCounts() []*MetricsSample {
 	return p.Counts
 }
+
+var Metrics_Gauges_DEFAULT []*MetricsSample
+
+func (p *Metrics) GetGauges() []*MetricsSample {
+	return p.Gauges
+}
 func (p *Metrics) IsSetCounts() bool {
 	return p.Counts != nil
+}
+
+func (p *Metrics) IsSetGauges() bool {
+	return p.Gauges != nil
 }
 
 func (p *Metrics) Read(iprot thrift.TProtocol) error {
@@ -2439,6 +2450,10 @@ func (p *Metrics) Read(iprot thrift.TProtocol) error {
 		switch fieldId {
 		case 1:
 			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
 				return err
 			}
 		default:
@@ -2476,11 +2491,34 @@ func (p *Metrics) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *Metrics) ReadField2(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return fmt.Errorf("error reading list begin: %s", err)
+	}
+	tSlice := make([]*MetricsSample, 0, size)
+	p.Gauges = tSlice
+	for i := 0; i < size; i++ {
+		_elem6 := &MetricsSample{}
+		if err := _elem6.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem6, err)
+		}
+		p.Gauges = append(p.Gauges, _elem6)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return fmt.Errorf("error reading list end: %s", err)
+	}
+	return nil
+}
+
 func (p *Metrics) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("Metrics"); err != nil {
 		return fmt.Errorf("%T write struct begin error: %s", p, err)
 	}
 	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -2510,6 +2548,29 @@ func (p *Metrics) writeField1(oprot thrift.TProtocol) (err error) {
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
 			return fmt.Errorf("%T write field end error 1:counts: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *Metrics) writeField2(oprot thrift.TProtocol) (err error) {
+	if p.IsSetGauges() {
+		if err := oprot.WriteFieldBegin("gauges", thrift.LIST, 2); err != nil {
+			return fmt.Errorf("%T write field begin error 2:gauges: %s", p, err)
+		}
+		if err := oprot.WriteListBegin(thrift.STRUCT, len(p.Gauges)); err != nil {
+			return fmt.Errorf("error writing list begin: %s", err)
+		}
+		for _, v := range p.Gauges {
+			if err := v.Write(oprot); err != nil {
+				return fmt.Errorf("%T error writing struct: %s", v, err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return fmt.Errorf("error writing list end: %s", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 2:gauges: %s", p, err)
 		}
 	}
 	return err
@@ -2724,11 +2785,11 @@ func (p *ReportRequest) ReadField3(iprot thrift.TProtocol) error {
 	tSlice := make([]*SpanRecord, 0, size)
 	p.SpanRecords = tSlice
 	for i := 0; i < size; i++ {
-		_elem6 := &SpanRecord{}
-		if err := _elem6.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem6, err)
+		_elem7 := &SpanRecord{}
+		if err := _elem7.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem7, err)
 		}
-		p.SpanRecords = append(p.SpanRecords, _elem6)
+		p.SpanRecords = append(p.SpanRecords, _elem7)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2744,11 +2805,11 @@ func (p *ReportRequest) ReadField4(iprot thrift.TProtocol) error {
 	tSlice := make([]*LogRecord, 0, size)
 	p.LogRecords = tSlice
 	for i := 0; i < size; i++ {
-		_elem7 := &LogRecord{}
-		if err := _elem7.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem7, err)
+		_elem8 := &LogRecord{}
+		if err := _elem8.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem8, err)
 		}
-		p.LogRecords = append(p.LogRecords, _elem7)
+		p.LogRecords = append(p.LogRecords, _elem8)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2791,11 +2852,11 @@ func (p *ReportRequest) ReadField9(iprot thrift.TProtocol) error {
 	tSlice := make([]*NamedCounter, 0, size)
 	p.Counters = tSlice
 	for i := 0; i < size; i++ {
-		_elem8 := &NamedCounter{}
-		if err := _elem8.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem8, err)
+		_elem9 := &NamedCounter{}
+		if err := _elem9.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem9, err)
 		}
-		p.Counters = append(p.Counters, _elem8)
+		p.Counters = append(p.Counters, _elem9)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2811,11 +2872,11 @@ func (p *ReportRequest) ReadField10(iprot thrift.TProtocol) error {
 	tSlice := make([]*LogRecord, 0, size)
 	p.InternalLogs = tSlice
 	for i := 0; i < size; i++ {
-		_elem9 := &LogRecord{}
-		if err := _elem9.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem9, err)
+		_elem10 := &LogRecord{}
+		if err := _elem10.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem10, err)
 		}
-		p.InternalLogs = append(p.InternalLogs, _elem9)
+		p.InternalLogs = append(p.InternalLogs, _elem10)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -3234,11 +3295,11 @@ func (p *ReportResponse) ReadField1(iprot thrift.TProtocol) error {
 	tSlice := make([]*Command, 0, size)
 	p.Commands = tSlice
 	for i := 0; i < size; i++ {
-		_elem10 := &Command{}
-		if err := _elem10.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem10, err)
+		_elem11 := &Command{}
+		if err := _elem11.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem11, err)
 		}
-		p.Commands = append(p.Commands, _elem10)
+		p.Commands = append(p.Commands, _elem11)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -3262,13 +3323,13 @@ func (p *ReportResponse) ReadField3(iprot thrift.TProtocol) error {
 	tSlice := make([]string, 0, size)
 	p.Errors = tSlice
 	for i := 0; i < size; i++ {
-		var _elem11 string
+		var _elem12 string
 		if v, err := iprot.ReadString(); err != nil {
 			return fmt.Errorf("error reading field 0: %s", err)
 		} else {
-			_elem11 = v
+			_elem12 = v
 		}
-		p.Errors = append(p.Errors, _elem11)
+		p.Errors = append(p.Errors, _elem12)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
