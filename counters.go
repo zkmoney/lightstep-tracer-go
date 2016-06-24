@@ -16,7 +16,7 @@ const (
 
 // A set of counter values for a given time window
 type counterSet struct {
-	droppedSpans int
+	droppedSpans int64
 }
 
 func (c *counterSet) toThrift() []*lightstep_thrift.NamedCounter {
@@ -24,7 +24,7 @@ func (c *counterSet) toThrift() []*lightstep_thrift.NamedCounter {
 	// communication protocol generic.
 	table := []struct {
 		name  string
-		value int
+		value int64
 	}{
 		{CounterNameDroppedSpans, c.droppedSpans},
 	}
