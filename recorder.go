@@ -1,6 +1,7 @@
 package lightstep
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/lightstep/lightstep-tracer-go/lightstep_thrift"
 	"github.com/lightstep/lightstep-tracer-go/thrift_0_9_2/lib/go/thrift"
-	"github.com/lightstep/lightstep-tracer-go/truncator"
 	"github.com/opentracing/basictracer-go"
 	ot "github.com/opentracing/opentracing-go"
 )
@@ -50,12 +50,6 @@ var (
 	flagMaxPayloadFieldBytes = flag.Int("lightstep_max_log_payload_field_bytes", 1024, "the maximum number of bytes exported in a single payload field")
 	flagMaxPayloadTotalBytes = flag.Int("lightstep_max_log_payload_max_total_bytes", 4096, "the maximum number of bytes exported in an entire payload")
 )
-
-var sharedTrunactor *truncator.Truncator
-
-func init() {
-	sharedTrunactor = truncator.NewTruncator(*flagMaxPayloadFieldBytes, *flagMaxPayloadTotalBytes)
-}
 
 // Endpoint describes a collection or web API host/port and whether or
 // not to use plaintext communicatation.
@@ -279,14 +273,11 @@ func (r *Recorder) Flush() {
 
 			var thriftPayload *string
 			if log.Payload != nil {
-				// This converts values to strings to avoid lossy encoding, i.e.
-				// not the same as a call to json.Marshal().  TruncateToJSON() is
-				// thread-safe.
-				jsonString, err := sharedTrunactor.TruncateToJSON(log.Payload)
+				jsonString, err := json.Marshal(log.Payload)
 				if err != nil {
 					thriftPayload = thrift.StringPtr(fmt.Sprintf("Error encoding payload object: %v", err))
 				} else {
-					thriftPayload = &jsonString
+					thriftPayload = thrift.StringPtr(string(jsonString))
 				}
 			}
 			logs[j] = &lightstep_thrift.LogRecord{
