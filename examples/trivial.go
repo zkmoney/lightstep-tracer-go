@@ -22,6 +22,10 @@ func subRoutine(ctx context.Context) {
 	trivialSpan, ctx := opentracing.StartSpanFromContext(ctx, "test span")
 	defer trivialSpan.Finish()
 	trivialSpan.LogEvent("logged something")
+
+	subSpan := opentracing.StartSpan(
+		"child span", opentracing.ChildOf(trivialSpan.Context()))
+	defer subSpan.Finish()
 }
 
 func main() {

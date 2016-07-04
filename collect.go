@@ -35,7 +35,7 @@ func AssembleTraceForSpan(span basictracer.Span) error {
 	return assembleTraceBy(span, func(span basictracer.Span) []byte {
 		// Note: API handler expects span_guid to be a string,
 		// for consistency with other handlers.
-		return []byte(fmt.Sprint(`{"span_guid":"`, span.Context().SpanID,
+		return []byte(fmt.Sprint(`{"span_guid":"`, span.Context().(*basictracer.SpanContext).SpanID,
 			`","at_micros": `, time.Now().UnixNano()/nanosPerMicro, `}`))
 	})
 }
