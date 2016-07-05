@@ -225,7 +225,7 @@ func (r *Recorder) RecordSpan(raw basictracer.RawSpan) {
 		return
 	}
 
-	atomic.AddInt64(&r.counters.droppedSpans, int64(r.addSpans.buffer([]basictracer.RawSpan{raw})))
+	atomic.AddInt64(&r.counters.droppedSpans, int64(r.buffer.addSpans([]basictracer.RawSpan{raw})))
 }
 
 func (r *Recorder) Flush() {
@@ -365,7 +365,7 @@ func (r *Recorder) Flush() {
 	// TODO something about timing
 	r.lock.Unlock()
 
-	if droppedPending {
+	if droppedPending != 0 {
 		r.maybeLogInfof("client reported %d dropped spans", droppedPending)
 	}
 
