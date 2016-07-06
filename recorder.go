@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lightstep/lightstep-tracer-go/lightstep_thrift"
@@ -224,7 +225,7 @@ func (r *Recorder) RecordSpan(raw basictracer.RawSpan) {
 		return
 	}
 
-	r.counters.droppedSpans += int64(r.buffer.addSpans([]basictracer.RawSpan{raw}))
+	atomic.AddInt64(&r.counters.droppedSpans, int64(r.buffer.addSpans([]basictracer.RawSpan{raw})))
 }
 
 func (r *Recorder) Flush() {
@@ -305,8 +306,11 @@ func (r *Recorder) Flush() {
 		}
 	}
 
-	droppedPending := int64(r.counters.droppedSpans)
-	r.counters.droppedSpans = 0
+	// TODO the handling of droppedPending / droppedSpans is very
+	// manual. Add abstraction for the second client-side count to
+	// avoid duplicating all the atomic ops.
+	droppedPending := atomic.SwapInt64(&r.counters.droppedSpans, 0)
+
 	metrics := lightstep_thrift.Metrics{
 		Counts: []*lightstep_thrift.MetricsSample{
 			&lightstep_thrift.MetricsSample{
@@ -349,8 +353,7 @@ func (r *Recorder) Flush() {
 	r.reportInFlight = false
 	if err != nil {
 		// Restore the records that did not get sent correctly
-		r.counters.droppedSpans += int64(r.buffer.addSpans(rawSpans))
-		r.counters.droppedSpans += droppedPending
+		atomic.AddInt64(&r.counters.droppedSpans, int64(r.buffer.addSpans(rawSpans))+droppedPending)
 		r.lock.Unlock()
 		return
 	}
@@ -358,11 +361,13 @@ func (r *Recorder) Flush() {
 	// Reset the buffers
 	r.reportOldest = now
 	r.reportYoungest = now
-	// TODO: this ends up discarding counts coming in during the RPC
-	r.counters = counterSet{}
 
 	// TODO something about timing
 	r.lock.Unlock()
+
+	if droppedPending != 0 {
+		r.maybeLogInfof("client reported %d dropped spans", droppedPending)
+	}
 
 	for _, c := range resp.Commands {
 		if c.Disable != nil && *c.Disable {
