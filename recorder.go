@@ -86,6 +86,8 @@ type Options struct {
 	// to a collector.  If zero, the default will be used.
 	ReportingPeriod time.Duration `yaml:"reporting_period"`
 
+	ReportTimeout time.Duration `yaml:"report_timeout"`
+
 	// Set Verbose to true to enable more logging.
 	Verbose bool
 }
@@ -203,7 +205,11 @@ func NewRecorder(opts Options) basictracer.SpanRecorder {
 		rec.buffer.setMaxBufferSize(opts.MaxBufferedSpans)
 	}
 
-	transport, err := thrift.NewTHttpPostClient(getCollectorURL(opts))
+	timeout := 60 * time.Second
+	if opts.ReportTimeout > 0 {
+		timeout = opts.ReportTimeout
+	}
+	transport, err := thrift.NewTHttpPostClient(getCollectorURL(opts), timeout)
 	if err != nil {
 		rec.maybeLogError(err)
 		return nil
