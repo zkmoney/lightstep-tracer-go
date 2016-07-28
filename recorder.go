@@ -88,7 +88,10 @@ type Options struct {
 
 	ReportTimeout time.Duration `yaml:"report_timeout"`
 
-	// Set Verbose to true to enable more logging.
+	// DropSpanLogs turns log events on all Spans into no-ops.
+	DropSpanLogs bool `yaml:"drop_span_logs"`
+
+	// Set Verbose to true to enable more text logging.
 	Verbose bool
 }
 
@@ -98,6 +101,7 @@ func NewTracer(opts Options) ot.Tracer {
 	options := basictracer.DefaultOptions()
 	options.ShouldSample = func(_ uint64) bool { return true }
 	options.Recorder = NewRecorder(opts)
+	options.DropAllLogs = opts.DropSpanLogs
 	return basictracer.NewWithOptions(options)
 }
 
