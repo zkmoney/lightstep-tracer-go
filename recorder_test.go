@@ -7,11 +7,7 @@ import (
 )
 
 func makeSpanSlice(length int) []basictracer.RawSpan {
-	spans := make([]basictracer.RawSpan, length)
-	for i := range spans {
-		spans[i].SpanContext = &basictracer.SpanContext{}
-	}
-	return spans
+	return make([]basictracer.RawSpan, length)
 }
 
 func TestMaxBufferSize(t *testing.T) {
