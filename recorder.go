@@ -305,8 +305,8 @@ func (r *Recorder) Flush() {
 		}
 
 		recs[i] = &lightstep_thrift.SpanRecord{
-			SpanGuid:       thrift.StringPtr(strconv.FormatUint(raw.SpanID, 16)),
-			TraceGuid:      thrift.StringPtr(strconv.FormatUint(raw.TraceID, 16)),
+			SpanGuid:       thrift.StringPtr(strconv.FormatUint(raw.Context.SpanID, 16)),
+			TraceGuid:      thrift.StringPtr(strconv.FormatUint(raw.Context.TraceID, 16)),
 			SpanName:       thrift.StringPtr(raw.Operation),
 			JoinIds:        joinIds,
 			OldestMicros:   thrift.Int64Ptr(raw.Start.UnixNano() / 1000),
