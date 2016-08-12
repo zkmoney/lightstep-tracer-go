@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,10 +38,16 @@ const (
 	// between child and parent spans.
 	ParentSpanGUIDKey = "parent_span_guid"
 
-	ComponentNameKey = "component_name"
-	GUIDKey          = "guid" // <- runtime guid, not span guid
-	HostnameKey      = "hostname"
-	CommandLineKey   = "command_line"
+	TracerPlatformValue = "go"
+	TracerVersionValue  = "0.9.1"
+
+	TracerPlatformKey        = "lightstep.tracer_platform"
+	TracerPlatformVersionKey = "lightstep.tracer_platform_version"
+	TracerVersionKey         = "lightstep.tracer_version"
+	ComponentNameKey         = "lightstep.component_name"
+	GUIDKey                  = "lightstep.guid" // <- runtime guid, not span guid
+	HostnameKey              = "lightstep.hostname"
+	CommandLineKey           = "lightstep.command_line"
 
 	ellipsis = "…"
 )
@@ -186,8 +193,10 @@ func NewRecorder(opts Options) basictracer.SpanRecorder {
 	for k, v := range opts.Tags {
 		attributes[k] = fmt.Sprint(v)
 	}
-	attributes["lightstep_tracer_platform"] = "go"
-	attributes["lightstep_tracer_version"] = "0.9.0"
+	// Don't let the Options override these values. That would be confusing.
+	attributes[TracerPlatformKey] = TracerPlatformValue
+	attributes[TracerPlatformVersionKey] = runtime.Version()
+	attributes[TracerVersionKey] = TracerVersionValue
 
 	now := time.Now()
 	rec := &Recorder{
