@@ -8,5 +8,5 @@ thrift:
 
 proto:
 	@git submodule update --init
-	cd lightstep-tracer-common && protoc --gofast_out=plugins=grpc:. --gofast_out=../collectorpb/ collector.proto
+	cd lightstep-tracer-common && protoc --go_out=plugins=grpc:. --go_out=../collectorpb/ collector.proto
 	@rm lightstep-tracer-common/collector.pb.go
