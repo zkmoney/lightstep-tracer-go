@@ -340,6 +340,7 @@ func convertToKeyValue(k string, value interface{}) *cpb.KeyValue {
 	return &kv
 }
 
+// TODO: Decide what we want to do about duplicate keys
 func translatePayload(pl interface{}, kvs []*cpb.KeyValue) []*cpb.KeyValue {
 	switch p := pl.(type) {
 	case map[string]interface{}:
