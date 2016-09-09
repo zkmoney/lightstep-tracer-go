@@ -334,7 +334,6 @@ func convertToKeyValue(k string, value interface{}) *cpb.KeyValue {
 		kv.Value = &cpb.KeyValue_BoolValue{v}
 	default:
 		glog.Infof("value: %v, %T, is an unsupported type, and has been converted to string", v, v)
-		glog.Infof(" the key is %v ", k)
 		// TODO: use reflection so that not all custom types have to be converted to string
 		kv.Value = &cpb.KeyValue_StringValue{fmt.Sprint(v)}
 	}
@@ -346,7 +345,6 @@ func translatePayload(pl interface{}, kvs []*cpb.KeyValue) []*cpb.KeyValue {
 	case map[string]interface{}:
 		for k, v := range p {
 			kvs = append(kvs, convertToKeyValue(k, v))
-			glog.Infof("the map is looks like {%v : %v}", k, v)
 		}
 	case []interface{}:
 		for _, v := range p {
