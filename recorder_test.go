@@ -1,13 +1,30 @@
 package lightstep
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/opentracing/basictracer-go"
+	ot "github.com/opentracing/opentracing-go"
 )
 
 func makeSpanSlice(length int) []basictracer.RawSpan {
 	return make([]basictracer.RawSpan, length)
+}
+
+func TestTranslateLogDatas(t *testing.T) {
+	ts := time.Unix(1473442150, 0)
+	otLogs := make([]ot.LogData, 8)
+	for i := 0; i < 8; i++ {
+		otLogs[i] = ot.LogData{
+			Timestamp: ts,
+			Event:     fmt.Sprintf("Event%v", i),
+			Payload:   map[string]interface{}{"hi": i, "bye": i, "bool": true, "string": "suhhh"},
+		}
+	}
+	res := translateLogDatas(otLogs)
+	fmt.Println(res)
 }
 
 func TestMaxBufferSize(t *testing.T) {
