@@ -18,6 +18,7 @@ import (
 
 	// N.B.(jmacd): Do not use google.golang.org/glog in this package.
 
+	"github.com/golang/glog"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	cpb "github.com/lightstep/lightstep-tracer-go/collectorpb"
 	"github.com/lightstep/lightstep-tracer-go/thrift_rpc"
@@ -46,6 +47,8 @@ const (
 	// ParentSpanGUIDKey is the tag key used to record the relationship
 	// between child and parent spans.
 	ParentSpanGUIDKey = "parent_span_guid"
+	messageKey        = "message"
+	payloadKey        = "payload"
 
 	TracerPlatformValue = "go"
 	TracerVersionValue  = "0.9.1"
@@ -349,29 +352,70 @@ func translateDurationFromOldesYoungest(ot time.Time, yt time.Time) uint64 {
 func translateTags(tags ot.Tags) []*cpb.KeyValue {
 	kvs := make([]*cpb.KeyValue, 0, len(tags))
 	for key, tag := range tags {
-		kv := cpb.KeyValue{Key: key}
-		switch v := tag.(type) {
-		case string:
-			kv.Value = &cpb.KeyValue_StringValue{v}
-		case int:
-			kv.Value = &cpb.KeyValue_IntValue{int64(v)}
-		case float64:
-			kv.Value = &cpb.KeyValue_DoubleValue{v}
-		case bool:
-			kv.Value = &cpb.KeyValue_BoolValue{v}
-		default:
-			fmt.Printf("value: %v, %T, is an unsupported type, and has been converted to string", v, v)
-			// TODO: use reflection so that not all custom types have to be converted to string
-			kv.Value = &cpb.KeyValue_StringValue{fmt.Sprint(v)}
-		}
-		kvs = append(kvs, &kv)
+		kv := convertToKeyValue(key, tag)
+		kvs = append(kvs, kv)
 	}
 	return kvs
 }
 
-// TODO: Implement once OT logs have been updated
-func translateLogs(log []ot.LogData) []*cpb.Log {
-	return nil
+func convertToKeyValue(k string, value interface{}) *cpb.KeyValue {
+	kv := cpb.KeyValue{Key: k}
+	switch v := value.(type) {
+	case string:
+		kv.Value = &cpb.KeyValue_StringValue{v}
+	case int:
+		kv.Value = &cpb.KeyValue_IntValue{int64(v)}
+	case float64:
+		kv.Value = &cpb.KeyValue_DoubleValue{v}
+	case bool:
+		kv.Value = &cpb.KeyValue_BoolValue{v}
+	default:
+		glog.Infof("value: %v, %T, is an unsupported type, and has been converted to string", v, v)
+		// TODO: use reflection so that not all custom types have to be converted to string
+		kv.Value = &cpb.KeyValue_StringValue{fmt.Sprint(v)}
+	}
+	return &kv
+}
+
+// TODO: Decide what we want to do about duplicate keys
+func translatePayload(pl interface{}, kvs []*cpb.KeyValue) []*cpb.KeyValue {
+	switch p := pl.(type) {
+	case map[string]interface{}:
+		for k, v := range p {
+			kvs = append(kvs, convertToKeyValue(k, v))
+		}
+	case []interface{}:
+		for _, v := range p {
+			kvs = append(kvs, convertToKeyValue(payloadKey, v))
+		}
+	case nil:
+		return nil
+	default:
+		kvs = append(kvs, convertToKeyValue(payloadKey, p))
+	}
+	return kvs
+}
+
+func translateEventAndPayload(e string, pl interface{}) []*cpb.KeyValue {
+	var kvs []*cpb.KeyValue
+	kvs = append(kvs, &cpb.KeyValue{Key: messageKey, Value: &cpb.KeyValue_StringValue{e}})
+	return translatePayload(pl, kvs)
+}
+
+func translateLogData(ld ot.LogData) *cpb.Log {
+	return &cpb.Log{
+		Timestamp: translateTime(ld.Timestamp),
+		Keyvalues: translateEventAndPayload(ld.Event, ld.Payload),
+	}
+}
+
+// TODO: Update once OT logs have been updated
+func translateLogDatas(lds []ot.LogData) []*cpb.Log {
+	logs := make([]*cpb.Log, len(lds))
+	for i, ld := range lds {
+		logs[i] = translateLogData(ld)
+	}
+	return logs
 }
 
 func translateRawSpan(rs basictracer.RawSpan) *cpb.Span {
@@ -382,7 +426,7 @@ func translateRawSpan(rs basictracer.RawSpan) *cpb.Span {
 		StartTimestamp: translateTime(rs.Start),
 		DurationMicros: translateDuration(rs.Duration),
 		Tags:           translateTags(rs.Tags),
-		Logs:           translateLogs(rs.Logs),
+		Logs:           translateLogDatas(rs.Logs),
 	}
 }
 
