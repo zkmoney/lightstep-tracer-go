@@ -329,7 +329,7 @@ func NewRecorder(opts Options) *Recorder {
 	rec.backend = backend
 	rec.closech = make(chan struct{})
 
-	go rec.reportLoop()
+	go rec.reportLoop(rec.closech)
 
 	return rec
 }
@@ -660,7 +660,7 @@ func (r *Recorder) shouldFlushLocked(now time.Time) bool {
 	return false
 }
 
-func (r *Recorder) reportLoop() {
+func (r *Recorder) reportLoop(closech chan struct{}) {
 	tickerChan := time.Tick(minReportingPeriod)
 	for {
 		select {
@@ -682,7 +682,7 @@ func (r *Recorder) reportLoop() {
 			if reconnect {
 				r.reconnectClient(now)
 			}
-		case <-r.closech:
+		case <-closech:
 			return
 		}
 	}
