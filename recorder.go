@@ -380,53 +380,61 @@ func (r *Recorder) convertToKeyValue(key string, value interface{}) *cpb.KeyValu
 	return &kv
 }
 
-func translateEventAndPayload(e string, pl interface{}) []*cpb.KeyValue {
+func translateEventAndPayload(e string, pl interface{}, internalLogs []*cpb.Log) ([]*cpb.KeyValue, []*cpb.Log) {
 	kvs := []*cpb.KeyValue{&cpb.KeyValue{Key: messageKey, Value: &cpb.KeyValue_StringValue{e}}}
 	if pl == nil {
-		return kvs
+		return kvs, internalLogs
 	}
 	jpl, err := json.Marshal(pl)
 	// TODO put error into InternalMetrics
 	if err != nil {
-		return append(kvs, &cpb.KeyValue{Key: payloadKey, Value: &cpb.KeyValue_StringValue{fmt.Sprintf("%v", err)}})
+		internalLogs = append(internalLogs, &cpb.Log{
+			Timestamp: translateTime(time.Now()),
+			Keyvalues: []*cpb.KeyValue{&cpb.KeyValue{Key: payloadKey, Value: &cpb.KeyValue_StringValue{fmt.Sprintf("%v", err)}}},
+		})
+		return nil, internalLogs
 	}
-	return append(kvs, &cpb.KeyValue{Key: payloadKey, Value: &cpb.KeyValue_StringValue{string(jpl)}})
-}
-
-func translateLogData(ld ot.LogData) *cpb.Log {
-	return &cpb.Log{
-		Timestamp: translateTime(ld.Timestamp),
-		Keyvalues: translateEventAndPayload(ld.Event, ld.Payload),
-	}
+	return append(kvs, &cpb.KeyValue{Key: payloadKey, Value: &cpb.KeyValue_StringValue{string(jpl)}}), internalLogs
 }
 
 // TODO: Update once OT logs have been updated
-func translateLogDatas(lds []ot.LogData) []*cpb.Log {
+func translateLogDatas(lds []ot.LogData) ([]*cpb.Log, []*cpb.Log) {
+	var internalLogs []*cpb.Log
 	logs := make([]*cpb.Log, len(lds))
 	for i, ld := range lds {
-		logs[i] = translateLogData(ld)
+		kvs, il := translateEventAndPayload(ld.Event, ld.Payload, internalLogs)
+		logs[i] = &cpb.Log{
+			Timestamp: translateTime(ld.Timestamp),
+			Keyvalues: kvs,
+		}
+		internalLogs = append(internalLogs, il...)
 	}
-	return logs
+	return logs, internalLogs
 }
 
-func (r *Recorder) translateRawSpan(rs basictracer.RawSpan) *cpb.Span {
-	return &cpb.Span{
+func (r *Recorder) translateRawSpan(rs basictracer.RawSpan) (*cpb.Span, []*cpb.Log) {
+	logs, internalLogs := translateLogDatas(rs.Logs)
+	s := &cpb.Span{
 		SpanContext:    translateSpanContext(rs.Context),
 		OperationName:  rs.Operation,
 		References:     translateParentSpanID(rs.ParentSpanID),
 		StartTimestamp: translateTime(rs.Start),
 		DurationMicros: translateDuration(rs.Duration),
 		Tags:           r.translateTags(rs.Tags),
-		Logs:           translateLogDatas(rs.Logs),
+		Logs:           logs,
 	}
+	return s, internalLogs
 }
 
-func (r *Recorder) convertRawSpans(rawSpans []basictracer.RawSpan) []*cpb.Span {
+func (r *Recorder) convertRawSpans(rawSpans []basictracer.RawSpan) ([]*cpb.Span, []*cpb.Log) {
+	var internalLogs []*cpb.Log
 	spans := make([]*cpb.Span, len(rawSpans))
 	for i, rs := range rawSpans {
-		spans[i] = r.translateRawSpan(rs)
+		s, il := r.translateRawSpan(rs)
+		spans[i] = s
+		internalLogs = append(internalLogs, il...)
 	}
-	return spans
+	return spans, internalLogs
 }
 
 func translateAttributes(atts map[string]string) []*cpb.KeyValue {
@@ -453,18 +461,19 @@ func convertDroppedPendingToCounts(dp int64) []*cpb.MetricsSample {
 	}
 }
 
-func convertToInternalMetrics(ot time.Time, yt time.Time, dp int64) *cpb.InternalMetrics {
+func convertToInternalMetrics(ot time.Time, yt time.Time, dp int64, internalLogs []*cpb.Log) *cpb.InternalMetrics {
 	return &cpb.InternalMetrics{
 		StartTimestamp: translateTime(ot),
 		DurationMicros: translateDurationFromOldesYoungest(ot, yt),
 		Counts:         convertDroppedPendingToCounts(dp),
+		Logs:           internalLogs,
 	}
 }
 
 func (r *Recorder) makeReportRequest(buffer *reportBuffer) *cpb.ReportRequest {
-	spans := r.convertRawSpans(buffer.rawSpans)
+	spans, internalLogs := r.convertRawSpans(buffer.rawSpans)
 	tracer := convertToTracer(r.attributes, r.tracerID)
-	internalMetrics := convertToInternalMetrics(buffer.reportStart, buffer.reportEnd, buffer.dropped)
+	internalMetrics := convertToInternalMetrics(buffer.reportStart, buffer.reportEnd, buffer.dropped, internalLogs)
 
 	req := cpb.ReportRequest{
 		Tracer:          tracer,
