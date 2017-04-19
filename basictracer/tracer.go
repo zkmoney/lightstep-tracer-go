@@ -71,7 +71,6 @@ func DefaultOptions() Options {
 func NewWithOptions(opts Options) opentracing.Tracer {
 	rval := &tracerImpl{options: opts}
 	rval.textPropagator = &textMapPropagator{rval}
-	rval.binaryPropagator = &binaryPropagator{rval}
 	return rval
 }
 
@@ -87,9 +86,8 @@ func New(recorder SpanRecorder) opentracing.Tracer {
 
 // Implements the `Tracer` interface.
 type tracerImpl struct {
-	options          Options
-	textPropagator   *textMapPropagator
-	binaryPropagator *binaryPropagator
+	options        Options
+	textPropagator *textMapPropagator
 }
 
 func (t *tracerImpl) StartSpan(
@@ -195,8 +193,6 @@ func (t *tracerImpl) Inject(sc opentracing.SpanContext, format interface{}, carr
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return t.textPropagator.Inject(sc, carrier)
-	case opentracing.Binary:
-		return t.binaryPropagator.Inject(sc, carrier)
 	}
 	return opentracing.ErrUnsupportedFormat
 }
@@ -205,8 +201,6 @@ func (t *tracerImpl) Extract(format interface{}, carrier interface{}) (opentraci
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return t.textPropagator.Extract(carrier)
-	case opentracing.Binary:
-		return t.binaryPropagator.Extract(carrier)
 	}
 	return nil, opentracing.ErrUnsupportedFormat
 }
