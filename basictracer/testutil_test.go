@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	"github.com/opentracing/opentracing-go/log"
 )
+
+type CountingRecorder int32
+
+func (c *CountingRecorder) RecordSpan(r RawSpan) {
+	atomic.AddInt32((*int32)(c), 1)
+}
 
 // LogFieldValidator facilitates testing of Span.Log*() implementations.
 //
