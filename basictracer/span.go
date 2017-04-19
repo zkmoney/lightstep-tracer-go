@@ -226,13 +226,6 @@ func (s *spanImpl) FinishWithOptions(opts opentracing.FinishOptions) {
 
 	// Last chance to get options before the span is possibly reset.
 	poolEnabled := s.tracer.options.EnableSpanPool
-	if s.tracer.options.DebugAssertUseAfterFinish {
-		// This makes it much more likely to catch a panic on any subsequent
-		// operation since s.tracer is accessed on every call to `Lock`.
-		// We don't call `reset()` here to preserve the logs in the Span
-		// which are printed when the assertion triggers.
-		s.tracer = nil
-	}
 
 	if poolEnabled {
 		spanPool.Put(s)

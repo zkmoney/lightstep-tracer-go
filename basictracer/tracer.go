@@ -50,41 +50,6 @@ type Options struct {
 	// If NewSpanEventListener is set, the callbacks will still fire for all log
 	// events. This value is ignored if DropAllLogs is true.
 	MaxLogsPerSpan int
-	// DebugAssertSingleGoroutine internally records the ID of the goroutine
-	// creating each Span and verifies that no operation is carried out on
-	// it on a different goroutine.
-	// Provided strictly for development purposes.
-	// Passing Spans between goroutine without proper synchronization often
-	// results in use-after-Finish() errors. For a simple example, consider the
-	// following pseudocode:
-	//
-	//  func (s *Server) Handle(req http.Request) error {
-	//    sp := s.StartSpan("server")
-	//    defer sp.Finish()
-	//    wait := s.queueProcessing(opentracing.ContextWithSpan(context.Background(), sp), req)
-	//    select {
-	//    case resp := <-wait:
-	//      return resp.Error
-	//    case <-time.After(10*time.Second):
-	//      sp.LogEvent("timed out waiting for processing")
-	//      return ErrTimedOut
-	//    }
-	//  }
-	//
-	// This looks reasonable at first, but a request which spends more than ten
-	// seconds in the queue is abandoned by the main goroutine and its trace
-	// finished, leading to use-after-finish when the request is finally
-	// processed. Note also that even joining on to a finished Span via
-	// StartSpanWithOptions constitutes an illegal operation.
-	//
-	// Code bases which do not require (or decide they do not want) Spans to
-	// be passed across goroutine boundaries can run with this flag enabled in
-	// tests to increase their chances of spotting wrong-doers.
-	DebugAssertSingleGoroutine bool
-	// DebugAssertUseAfterFinish is provided strictly for development purposes.
-	// When set, it attempts to exacerbate issues emanating from use of Spans
-	// after calling Finish by running additional assertions.
-	DebugAssertUseAfterFinish bool
 	// EnableSpanPool enables the use of a pool, so that the tracer reuses spans
 	// after Finish has been called on it. Adds a slight performance gain as it
 	// reduces allocations. However, if you have any use-after-finish race
@@ -107,7 +72,6 @@ func NewWithOptions(opts Options) opentracing.Tracer {
 	rval := &tracerImpl{options: opts}
 	rval.textPropagator = &textMapPropagator{rval}
 	rval.binaryPropagator = &binaryPropagator{rval}
-	rval.accessorPropagator = &accessorPropagator{rval}
 	return rval
 }
 
@@ -123,10 +87,9 @@ func New(recorder SpanRecorder) opentracing.Tracer {
 
 // Implements the `Tracer` interface.
 type tracerImpl struct {
-	options            Options
-	textPropagator     *textMapPropagator
-	binaryPropagator   *binaryPropagator
-	accessorPropagator *accessorPropagator
+	options          Options
+	textPropagator   *textMapPropagator
+	binaryPropagator *binaryPropagator
 }
 
 func (t *tracerImpl) StartSpan(
@@ -219,9 +182,6 @@ func (t *tracerImpl) startSpanInternal(
 	sp.raw.Start = startTime
 	sp.raw.Duration = -1
 	sp.raw.Tags = tags
-	if t.options.DebugAssertSingleGoroutine {
-		sp.SetTag(debugGoroutineIDTag, curGoroutineID())
-	}
 	defer sp.onCreate(operationName)
 	return sp
 }
@@ -238,9 +198,6 @@ func (t *tracerImpl) Inject(sc opentracing.SpanContext, format interface{}, carr
 	case opentracing.Binary:
 		return t.binaryPropagator.Inject(sc, carrier)
 	}
-	if _, ok := format.(delegatorType); ok {
-		return t.accessorPropagator.Inject(sc, carrier)
-	}
 	return opentracing.ErrUnsupportedFormat
 }
 
@@ -250,9 +207,6 @@ func (t *tracerImpl) Extract(format interface{}, carrier interface{}) (opentraci
 		return t.textPropagator.Extract(carrier)
 	case opentracing.Binary:
 		return t.binaryPropagator.Extract(carrier)
-	}
-	if _, ok := format.(delegatorType); ok {
-		return t.accessorPropagator.Extract(carrier)
 	}
 	return nil, opentracing.ErrUnsupportedFormat
 }
