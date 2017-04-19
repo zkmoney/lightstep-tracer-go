@@ -20,10 +20,6 @@ type Tracer interface {
 type Options struct {
 	// Recorder receives Spans which have been finished.
 	Recorder SpanRecorder
-	// NewSpanEventListener can be used to enhance the tracer by effectively
-	// attaching external code to trace events. See NetTraceIntegrator for a
-	// practical example, and event.go for the list of possible events.
-	NewSpanEventListener func() func(SpanEvent)
 	// DropAllLogs turns log events on all Spans into no-ops.
 	// If NewSpanEventListener is set, the callbacks will still fire.
 	DropAllLogs bool
@@ -157,9 +153,6 @@ func (t *tracerImpl) startSpanInternal(
 	tags opentracing.Tags,
 ) opentracing.Span {
 	sp.tracer = t
-	if t.options.NewSpanEventListener != nil {
-		sp.event = t.options.NewSpanEventListener()
-	}
 	sp.raw.Operation = operationName
 	sp.raw.Start = startTime
 	sp.raw.Duration = -1
@@ -167,11 +160,6 @@ func (t *tracerImpl) startSpanInternal(
 	defer sp.onCreate(operationName)
 	return sp
 }
-
-type delegatorType struct{}
-
-// Delegator is the format to use for DelegatingCarrier.
-var Delegator delegatorType
 
 func (t *tracerImpl) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
 	switch format {
