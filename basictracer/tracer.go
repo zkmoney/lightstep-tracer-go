@@ -33,11 +33,6 @@ type Options struct {
 	// If NewSpanEventListener is set, the callbacks will still fire for all log
 	// events. This value is ignored if DropAllLogs is true.
 	MaxLogsPerSpan int
-	// EnableSpanPool enables the use of a pool, so that the tracer reuses spans
-	// after Finish has been called on it. Adds a slight performance gain as it
-	// reduces allocations. However, if you have any use-after-finish race
-	// conditions the code may panic.
-	EnableSpanPool bool
 }
 
 // DefaultOptions returns an Options object with a 1 in 64 sampling rate and
@@ -84,11 +79,6 @@ func (t *tracerImpl) StartSpan(
 }
 
 func (t *tracerImpl) getSpan() *spanImpl {
-	if t.options.EnableSpanPool {
-		sp := spanPool.Get().(*spanImpl)
-		sp.reset()
-		return sp
-	}
 	return &spanImpl{}
 }
 
