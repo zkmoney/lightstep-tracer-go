@@ -1,26 +1,6 @@
 package basictracer
 
-import (
-	"sync/atomic"
-	"testing"
-	"time"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestInMemoryRecorderSpans(t *testing.T) {
-	recorder := NewInMemoryRecorder()
-	var apiRecorder SpanRecorder = recorder
-	span := RawSpan{
-		Context:   SpanContext{},
-		Operation: "test-span",
-		Start:     time.Now(),
-		Duration:  -1,
-	}
-	apiRecorder.RecordSpan(span)
-	assert.Equal(t, []RawSpan{span}, recorder.GetSpans())
-	assert.Equal(t, []RawSpan{}, recorder.GetSampledSpans())
-}
+import "sync/atomic"
 
 type CountingRecorder int32
 

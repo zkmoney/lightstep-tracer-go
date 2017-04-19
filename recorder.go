@@ -169,7 +169,6 @@ func (opts *Options) setDefaults() {
 // collector.
 func NewTracer(opts Options) ot.Tracer {
 	options := basictracer.DefaultOptions()
-	options.ShouldSample = func(_ uint64) bool { return true }
 
 	if opts.UseGRPC {
 		r := NewRecorder(opts)

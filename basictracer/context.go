@@ -8,9 +8,6 @@ type SpanContext struct {
 	// A probabilistically unique identifier for a span.
 	SpanID uint64
 
-	// Whether the trace is sampled.
-	Sampled bool
-
 	// The span's associated baggage.
 	Baggage map[string]string // initialized on first use
 }
@@ -38,5 +35,5 @@ func (c SpanContext) WithBaggageItem(key, val string) SpanContext {
 		newBaggage[key] = val
 	}
 	// Use positional parameters so the compiler will help catch new fields.
-	return SpanContext{c.TraceID, c.SpanID, c.Sampled, newBaggage}
+	return SpanContext{c.TraceID, c.SpanID, newBaggage}
 }

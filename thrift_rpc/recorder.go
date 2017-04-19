@@ -106,7 +106,6 @@ type Options struct {
 // collector.
 func NewTracer(opts Options) ot.Tracer {
 	options := basictracer.DefaultOptions()
-	options.ShouldSample = func(_ uint64) bool { return true }
 	options.Recorder = NewRecorder(opts)
 	options.DropAllLogs = opts.DropSpanLogs
 	options.MaxLogsPerSpan = opts.MaxLogsPerSpan

@@ -35,7 +35,7 @@ func (p *textMapPropagator) Inject(
 	}
 	carrier.Set(fieldNameTraceID, strconv.FormatUint(sc.TraceID, 16))
 	carrier.Set(fieldNameSpanID, strconv.FormatUint(sc.SpanID, 16))
-	carrier.Set(fieldNameSampled, strconv.FormatBool(sc.Sampled))
+	carrier.Set(fieldNameSampled, "true")
 
 	for k, v := range sc.Baggage {
 		carrier.Set(prefixBaggage+k, v)
@@ -52,7 +52,6 @@ func (p *textMapPropagator) Extract(
 	}
 	requiredFieldCount := 0
 	var traceID, spanID uint64
-	var sampled bool
 	var err error
 	decodedBaggage := make(map[string]string)
 	err = carrier.ForeachKey(func(k, v string) error {
@@ -62,25 +61,21 @@ func (p *textMapPropagator) Extract(
 			if err != nil {
 				return opentracing.ErrSpanContextCorrupted
 			}
+			requiredFieldCount++
 		case fieldNameSpanID:
 			spanID, err = strconv.ParseUint(v, 16, 64)
 			if err != nil {
 				return opentracing.ErrSpanContextCorrupted
 			}
+			requiredFieldCount++
 		case fieldNameSampled:
-			sampled, err = strconv.ParseBool(v)
-			if err != nil {
-				return opentracing.ErrSpanContextCorrupted
-			}
+			requiredFieldCount++
 		default:
 			lowercaseK := strings.ToLower(k)
 			if strings.HasPrefix(lowercaseK, prefixBaggage) {
 				decodedBaggage[strings.TrimPrefix(lowercaseK, prefixBaggage)] = v
 			}
-			// Balance off the requiredFieldCount++ just below...
-			requiredFieldCount--
 		}
-		requiredFieldCount++
 		return nil
 	})
 	if err != nil {
@@ -96,7 +91,6 @@ func (p *textMapPropagator) Extract(
 	return SpanContext{
 		TraceID: traceID,
 		SpanID:  spanID,
-		Sampled: sampled,
 		Baggage: decodedBaggage,
 	}, nil
 }

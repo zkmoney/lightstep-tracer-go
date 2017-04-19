@@ -18,19 +18,6 @@ type Tracer interface {
 // Options allows creating a customized Tracer via NewWithOptions. The object
 // must not be updated when there is an active tracer using it.
 type Options struct {
-	// ShouldSample is a function which is called when creating a new Span and
-	// determines whether that Span is sampled. The randomized TraceID is supplied
-	// to allow deterministic sampling decisions to be made across different nodes.
-	// For example,
-	//
-	//   func(traceID uint64) { return traceID % 64 == 0 }
-	//
-	// samples every 64th trace on average.
-	ShouldSample func(traceID uint64) bool
-	// TrimUnsampledSpans turns potentially expensive operations on unsampled
-	// Spans into no-ops. More precisely, tags and log events are silently
-	// discarded. If NewSpanEventListener is set, the callbacks will still fire.
-	TrimUnsampledSpans bool
 	// Recorder receives Spans which have been finished.
 	Recorder SpanRecorder
 	// NewSpanEventListener can be used to enhance the tracer by effectively
@@ -62,7 +49,6 @@ type Options struct {
 // returned object with a Tracer.
 func DefaultOptions() Options {
 	return Options{
-		ShouldSample:   func(traceID uint64) bool { return traceID%64 == 0 },
 		MaxLogsPerSpan: 100,
 	}
 }
@@ -139,7 +125,6 @@ ReferencesLoop:
 			refCtx := ref.ReferencedContext.(SpanContext)
 			sp.raw.Context.TraceID = refCtx.TraceID
 			sp.raw.Context.SpanID = randomID()
-			sp.raw.Context.Sampled = refCtx.Sampled
 			sp.raw.ParentSpanID = refCtx.SpanID
 
 			if l := len(refCtx.Baggage); l > 0 {
@@ -155,7 +140,6 @@ ReferencesLoop:
 		// No parent Span found; allocate new trace and span ids and determine
 		// the Sampled status.
 		sp.raw.Context.TraceID, sp.raw.Context.SpanID = randomID2()
-		sp.raw.Context.Sampled = t.options.ShouldSample(sp.raw.Context.TraceID)
 	}
 
 	return t.startSpanInternal(

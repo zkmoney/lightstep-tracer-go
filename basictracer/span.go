@@ -5,7 +5,6 @@ import (
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 )
 
@@ -66,23 +65,10 @@ func (s *spanImpl) SetOperationName(operationName string) opentracing.Span {
 	return s
 }
 
-func (s *spanImpl) trim() bool {
-	return !s.raw.Context.Sampled && s.tracer.options.TrimUnsampledSpans
-}
-
 func (s *spanImpl) SetTag(key string, value interface{}) opentracing.Span {
 	defer s.onTag(key, value)
 	s.Lock()
 	defer s.Unlock()
-	if key == string(ext.SamplingPriority) {
-		if v, ok := value.(uint16); ok {
-			s.raw.Context.Sampled = v != 0
-			return s
-		}
-	}
-	if s.trim() {
-		return s
-	}
 
 	if s.raw.Tags == nil {
 		s.raw.Tags = opentracing.Tags{}
@@ -122,7 +108,7 @@ func (s *spanImpl) LogFields(fields ...log.Field) {
 	defer s.onLogFields(lr)
 	s.Lock()
 	defer s.Unlock()
-	if s.trim() || s.tracer.options.DropAllLogs {
+	if s.tracer.options.DropAllLogs {
 		return
 	}
 	if lr.Timestamp.IsZero() {
@@ -148,7 +134,7 @@ func (s *spanImpl) Log(ld opentracing.LogData) {
 	defer s.onLog(ld)
 	s.Lock()
 	defer s.Unlock()
-	if s.trim() || s.tracer.options.DropAllLogs {
+	if s.tracer.options.DropAllLogs {
 		return
 	}
 
@@ -242,9 +228,6 @@ func (s *spanImpl) Context() opentracing.SpanContext {
 
 func (s *spanImpl) SetBaggageItem(key, val string) opentracing.Span {
 	s.onBaggage(key, val)
-	if s.trim() {
-		return s
-	}
 
 	s.Lock()
 	defer s.Unlock()

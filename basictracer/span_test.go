@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,8 +13,7 @@ import (
 func TestSpan_Baggage(t *testing.T) {
 	recorder := NewInMemoryRecorder()
 	tracer := NewWithOptions(Options{
-		Recorder:     recorder,
-		ShouldSample: func(traceID uint64) bool { return true }, // always sample
+		Recorder: recorder,
 	})
 	span := tracer.StartSpan("x")
 	span.SetBaggageItem("x", "y")
@@ -48,44 +46,10 @@ func TestSpan_Baggage(t *testing.T) {
 	assert.Equal(t, 2, len(spans[0].Context.Baggage))
 }
 
-func TestSpan_Sampling(t *testing.T) {
-	recorder := NewInMemoryRecorder()
-	tracer := NewWithOptions(Options{
-		Recorder:     recorder,
-		ShouldSample: func(traceID uint64) bool { return true },
-	})
-	span := tracer.StartSpan("x")
-	span.Finish()
-	assert.Equal(t, 1, len(recorder.GetSampledSpans()), "by default span should be sampled")
-
-	recorder.Reset()
-	span = tracer.StartSpan("x")
-	ext.SamplingPriority.Set(span, 0)
-	span.Finish()
-	assert.Equal(t, 0, len(recorder.GetSampledSpans()), "SamplingPriority=0 should turn off sampling")
-
-	tracer = NewWithOptions(Options{
-		Recorder:     recorder,
-		ShouldSample: func(traceID uint64) bool { return false },
-	})
-
-	recorder.Reset()
-	span = tracer.StartSpan("x")
-	span.Finish()
-	assert.Equal(t, 0, len(recorder.GetSampledSpans()), "by default span should not be sampled")
-
-	recorder.Reset()
-	span = tracer.StartSpan("x")
-	ext.SamplingPriority.Set(span, 1)
-	span.Finish()
-	assert.Equal(t, 1, len(recorder.GetSampledSpans()), "SamplingPriority=1 should turn on sampling")
-}
-
 func TestSpan_SingleLoggedTaggedSpan(t *testing.T) {
 	recorder := NewInMemoryRecorder()
 	tracer := NewWithOptions(Options{
-		Recorder:     recorder,
-		ShouldSample: func(traceID uint64) bool { return true }, // always sample
+		Recorder: recorder,
 	})
 	span := tracer.StartSpan("x")
 	span.LogEventWithPayload("event", "payload")
@@ -107,53 +71,12 @@ func TestSpan_SingleLoggedTaggedSpan(t *testing.T) {
 		ExpectNextFieldEquals("32bit", reflect.Uint32, "4294967295")
 }
 
-func TestSpan_TrimUnsampledSpans(t *testing.T) {
-	recorder := NewInMemoryRecorder()
-	// Tracer that trims only unsampled but always samples
-	tracer := NewWithOptions(Options{
-		Recorder:           recorder,
-		ShouldSample:       func(traceID uint64) bool { return true }, // always sample
-		TrimUnsampledSpans: true,
-	})
-
-	span := tracer.StartSpan("x")
-	span.LogFields(log.String("key_str", "value"), log.Uint32("32bit", 4294967295))
-	span.SetTag("tag", "value")
-	span.Finish()
-	spans := recorder.GetSpans()
-	assert.Equal(t, 1, len(spans))
-	assert.Equal(t, 1, len(spans[0].Logs))
-	assert.Equal(t, opentracing.Tags{"tag": "value"}, spans[0].Tags)
-	fv := NewLogFieldValidator(t, spans[0].Logs[0].Fields)
-	fv.
-		ExpectNextFieldEquals("key_str", reflect.String, "value").
-		ExpectNextFieldEquals("32bit", reflect.Uint32, "4294967295")
-
-	recorder.Reset()
-	// Tracer that trims only unsampled and never samples
-	tracer = NewWithOptions(Options{
-		Recorder:           recorder,
-		ShouldSample:       func(traceID uint64) bool { return false }, // never sample
-		TrimUnsampledSpans: true,
-	})
-
-	span = tracer.StartSpan("x")
-	span.LogFields(log.String("key_str", "value"), log.Uint32("32bit", 4294967295))
-	span.SetTag("tag", "value")
-	span.Finish()
-	spans = recorder.GetSpans()
-	assert.Equal(t, 1, len(spans))
-	assert.Equal(t, 0, len(spans[0].Logs))
-	assert.Equal(t, 0, len(spans[0].Tags))
-}
-
 func TestSpan_DropAllLogs(t *testing.T) {
 	recorder := NewInMemoryRecorder()
 	// Tracer that drops logs
 	tracer := NewWithOptions(Options{
-		Recorder:     recorder,
-		ShouldSample: func(traceID uint64) bool { return true }, // always sample
-		DropAllLogs:  true,
+		Recorder:    recorder,
+		DropAllLogs: true,
 	})
 
 	span := tracer.StartSpan("x")
@@ -175,7 +98,6 @@ func TestSpan_MaxLogSperSpan(t *testing.T) {
 			// Tracer that only retains the last <limit> logs.
 			tracer := NewWithOptions(Options{
 				Recorder:       recorder,
-				ShouldSample:   func(traceID uint64) bool { return true }, // always sample
 				MaxLogsPerSpan: limit,
 			})
 
