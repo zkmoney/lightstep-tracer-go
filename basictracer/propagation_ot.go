@@ -8,7 +8,6 @@ import (
 )
 
 type textMapPropagator struct {
-	tracer *tracerImpl
 }
 
 const (
@@ -21,7 +20,7 @@ const (
 	fieldNameSampled      = prefixTracerState + "sampled"
 )
 
-func (p *textMapPropagator) Inject(
+func (_ *textMapPropagator) Inject(
 	spanContext opentracing.SpanContext,
 	opaqueCarrier interface{},
 ) error {
@@ -43,7 +42,7 @@ func (p *textMapPropagator) Inject(
 	return nil
 }
 
-func (p *textMapPropagator) Extract(
+func (_ *textMapPropagator) Extract(
 	opaqueCarrier interface{},
 ) (opentracing.SpanContext, error) {
 	carrier, ok := opaqueCarrier.(opentracing.TextMapReader)

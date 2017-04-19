@@ -46,9 +46,7 @@ func DefaultOptions() Options {
 
 // NewWithOptions creates a customized Tracer.
 func NewWithOptions(opts Options) opentracing.Tracer {
-	rval := &tracerImpl{options: opts}
-	rval.textPropagator = &textMapPropagator{rval}
-	return rval
+	return &tracerImpl{options: opts}
 }
 
 // New creates and returns a standard Tracer which defers completed Spans to
@@ -64,7 +62,7 @@ func New(recorder SpanRecorder) opentracing.Tracer {
 // Implements the `Tracer` interface.
 type tracerImpl struct {
 	options        Options
-	textPropagator *textMapPropagator
+	textPropagator textMapPropagator
 }
 
 func (t *tracerImpl) StartSpan(
@@ -76,10 +74,6 @@ func (t *tracerImpl) StartSpan(
 		o.Apply(&sso)
 	}
 	return t.StartSpanWithOptions(operationName, sso)
-}
-
-func (t *tracerImpl) getSpan() *spanImpl {
-	return &spanImpl{}
 }
 
 func (t *tracerImpl) StartSpanWithOptions(
@@ -97,7 +91,8 @@ func (t *tracerImpl) StartSpanWithOptions(
 
 	// Build the new span. This is the only allocation: We'll return this as
 	// an opentracing.Span.
-	sp := t.getSpan()
+	sp := &spanImpl{}
+
 	// Look for a parent in the list of References.
 	//
 	// TODO: would be nice if basictracer did something with all
