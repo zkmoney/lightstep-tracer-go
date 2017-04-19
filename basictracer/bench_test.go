@@ -76,7 +76,7 @@ func BenchmarkSpan_100BaggageItems(b *testing.B) {
 	benchmarkWithOps(b, 0, 0, 100)
 }
 
-func BenchmarkTrimmedSpan_100Events_100Tags_100BaggageItems(b *testing.B) {
+func BenchmarkSpan_100Events_100Tags_100BaggageItems(b *testing.B) {
 	var r CountingRecorder
 	opts := DefaultOptions()
 	opts.Recorder = &r
@@ -157,26 +157,10 @@ func BenchmarkInject_TextMap_100BaggageItems(b *testing.B) {
 	benchmarkInject(b, opentracing.TextMap, 100)
 }
 
-func BenchmarkInject_Binary_Empty(b *testing.B) {
-	benchmarkInject(b, opentracing.Binary, 0)
-}
-
-func BenchmarkInject_Binary_100BaggageItems(b *testing.B) {
-	benchmarkInject(b, opentracing.Binary, 100)
-}
-
 func BenchmarkJoin_TextMap_Empty(b *testing.B) {
 	benchmarkExtract(b, opentracing.TextMap, 0)
 }
 
 func BenchmarkJoin_TextMap_100BaggageItems(b *testing.B) {
 	benchmarkExtract(b, opentracing.TextMap, 100)
-}
-
-func BenchmarkJoin_Binary_Empty(b *testing.B) {
-	benchmarkExtract(b, opentracing.Binary, 0)
-}
-
-func BenchmarkJoin_Binary_100BaggageItems(b *testing.B) {
-	benchmarkExtract(b, opentracing.Binary, 100)
 }
