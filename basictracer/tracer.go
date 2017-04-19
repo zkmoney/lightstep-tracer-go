@@ -157,7 +157,6 @@ func (t *tracerImpl) startSpanInternal(
 	sp.raw.Start = startTime
 	sp.raw.Duration = -1
 	sp.raw.Tags = tags
-	defer sp.onCreate(operationName)
 	return sp
 }
 

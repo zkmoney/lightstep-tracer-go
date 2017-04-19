@@ -25,7 +25,6 @@ type Span interface {
 // `basictracer.New()`).
 type spanImpl struct {
 	tracer     *tracerImpl
-	event      func(SpanEvent)
 	sync.Mutex // protects the fields below
 	raw        RawSpan
 	// The number of logs dropped because of MaxLogsPerSpan.
@@ -37,7 +36,7 @@ var spanPool = &sync.Pool{New: func() interface{} {
 }}
 
 func (s *spanImpl) reset() {
-	s.tracer, s.event = nil, nil
+	s.tracer = nil
 	// Note: Would like to do the following, but then the consumer of RawSpan
 	// (the recorder) needs to make sure that they're not holding on to the
 	// baggage or logs when they return (i.e. they need to copy if they care):
@@ -66,7 +65,6 @@ func (s *spanImpl) SetOperationName(operationName string) opentracing.Span {
 }
 
 func (s *spanImpl) SetTag(key string, value interface{}) opentracing.Span {
-	defer s.onTag(key, value)
 	s.Lock()
 	defer s.Unlock()
 
@@ -105,7 +103,6 @@ func (s *spanImpl) LogFields(fields ...log.Field) {
 	lr := opentracing.LogRecord{
 		Fields: fields,
 	}
-	defer s.onLogFields(lr)
 	s.Lock()
 	defer s.Unlock()
 	if s.tracer.options.DropAllLogs {
@@ -131,7 +128,6 @@ func (s *spanImpl) LogEventWithPayload(event string, payload interface{}) {
 }
 
 func (s *spanImpl) Log(ld opentracing.LogData) {
-	defer s.onLog(ld)
 	s.Lock()
 	defer s.Unlock()
 	if s.tracer.options.DropAllLogs {
@@ -207,7 +203,6 @@ func (s *spanImpl) FinishWithOptions(opts opentracing.FinishOptions) {
 
 	s.raw.Duration = duration
 
-	s.onFinish(s.raw)
 	s.tracer.options.Recorder.RecordSpan(s.raw)
 
 	// Last chance to get options before the span is possibly reset.
@@ -227,7 +222,6 @@ func (s *spanImpl) Context() opentracing.SpanContext {
 }
 
 func (s *spanImpl) SetBaggageItem(key, val string) opentracing.Span {
-	s.onBaggage(key, val)
 
 	s.Lock()
 	defer s.Unlock()
