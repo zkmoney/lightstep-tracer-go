@@ -58,8 +58,16 @@ func (_ *lightstepBinaryPropagator) Extract(
 	var scarrier string
 	var bcarrier []byte
 	switch t := opaqueCarrier.(type) {
+	case *string:
+		if t != nil {
+			scarrier = *t
+		}
 	case string:
 		scarrier = t
+	case *[]byte:
+		if t != nil {
+			bcarrier = *t
+		}
 	case []byte:
 		bcarrier = t
 	default:
