@@ -61,8 +61,9 @@ func New(recorder SpanRecorder) opentracing.Tracer {
 
 // Implements the `Tracer` interface.
 type tracerImpl struct {
-	options        Options
-	textPropagator textMapPropagator
+	options          Options
+	textPropagator   textMapPropagator
+	binaryPropagator lightstepBinaryPropagator
 }
 
 func (t *tracerImpl) StartSpan(
