@@ -8,8 +8,11 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-type lightstepBinaryPropagator struct {
-}
+type lightstepBinaryPropagator struct{}
+
+type lightstepBinaryCarrier struct{}
+
+var BinaryCarrier lightstepBinaryCarrier
 
 func (_ *lightstepBinaryPropagator) Inject(
 	spanContext opentracing.SpanContext,

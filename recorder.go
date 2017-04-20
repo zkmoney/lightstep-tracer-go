@@ -73,6 +73,8 @@ var (
 
 	errPreviousReportInFlight = fmt.Errorf("a previous Report is still in flight; aborting Flush()")
 	errConnectionWasClosed    = fmt.Errorf("the connection was closed")
+
+	BinaryCarrier = basictracer.BinaryCarrier
 )
 
 // A set of counter values for a given time window
