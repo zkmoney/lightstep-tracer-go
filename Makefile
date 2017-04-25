@@ -28,9 +28,19 @@ collectorpb/collector.pb.go: lightstep-tracer-common/collector.proto
 	  protoc --go_out=plugins=grpc:/output --proto_path=/input /input/collector.proto
 endif
 
-test: lightstep_thrift/constants.go collectorpb/collector.pb.go
+# gRPC
+ifeq (,$(wildcard lightstep-tracer-common/collector.proto))
+lightsteppb/lightstep_carrier.pb.go:
+else
+lightsteppb/lightstep_carrier.pb.go: lightstep-tracer-common/lightstep_carrier.proto
+	docker run --rm -v $(shell pwd)/lightstep-tracer-common:/input:ro -v $(shell pwd)/lightsteppb:/output \
+	  lightstep/protoc:latest \
+	  protoc --go_out=plugins=grpc:/output --proto_path=/input /input/lightstep_carrier.proto
+endif
+
+test: lightstep_thrift/constants.go collectorpb/collector.pb.go lightsteppb/lightstep_carrier.pb.go
 	${GO} test $(shell go list ./... | grep -v /vendor/)
 	docker run --rm -v $(GOPATH):/input:ro lightstep/noglog:latest noglog github.com/lightstep/lightstep-tracer-go
 
-build: lightstep_thrift/constants.go collectorpb/collector.pb.go
+build: lightstep_thrift/constants.go collectorpb/collector.pb.go lightsteppb/lightstep_carrier.pb.go
 	${GO} build github.com/lightstep/lightstep-tracer-go/...
