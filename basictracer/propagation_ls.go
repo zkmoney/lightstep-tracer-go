@@ -8,13 +8,17 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-type lightstepBinaryPropagator struct{}
+type (
+	lightstepBinaryPropagator struct{}
 
-type lightstepBinaryCarrier struct{}
+	lightstepBinaryCarrier struct{}
+)
 
-var BinaryCarrier lightstepBinaryCarrier
+var (
+	BinaryCarrier lightstepBinaryCarrier
+)
 
-func (_ *lightstepBinaryPropagator) Inject(
+func (_ lightstepBinaryPropagator) Inject(
 	spanContext opentracing.SpanContext,
 	opaqueCarrier interface{},
 ) error {
@@ -22,75 +26,66 @@ func (_ *lightstepBinaryPropagator) Inject(
 	if !ok {
 		return opentracing.ErrInvalidSpanContext
 	}
-	var scarrier *string
-	var bcarrier *[]byte
-	switch t := opaqueCarrier.(type) {
-	case *string:
-		scarrier = t
-	case *[]byte:
-		bcarrier = t
-	default:
-		return opentracing.ErrInvalidCarrier
-	}
-	pb := &lightstep.BinaryCarrier{}
-	pb.BasicCtx = &lightstep.BasicTracerCarrier{
-		TraceId:      sc.TraceID,
-		SpanId:       sc.SpanID,
-		Sampled:      true,
-		BaggageItems: sc.Baggage,
-	}
-	data, err := proto.Marshal(pb)
+	data, err := proto.Marshal(&lightstep.BinaryCarrier{
+		BasicCtx: &lightstep.BasicTracerCarrier{
+			TraceId:      sc.TraceID,
+			SpanId:       sc.SpanID,
+			Sampled:      true,
+			BaggageItems: sc.Baggage,
+		},
+	})
 	if err != nil {
 		return err
 	}
-	if bcarrier == nil {
-		*scarrier = base64.StdEncoding.EncodeToString(data)
-	} else {
-		*bcarrier = make([]byte, base64.StdEncoding.EncodedLen(len(data)))
-		base64.StdEncoding.Encode(*bcarrier, data)
+	switch carrier := opaqueCarrier.(type) {
+	case *string:
+		*carrier = base64.StdEncoding.EncodeToString(data)
+	case *[]byte:
+		*carrier = make([]byte, base64.StdEncoding.EncodedLen(len(data)))
+		base64.StdEncoding.Encode(*carrier, data)
+	default:
+		return opentracing.ErrInvalidCarrier
 	}
 	return nil
 }
 
-func (_ *lightstepBinaryPropagator) Extract(
+func decodeBase64Bytes(in []byte) ([]byte, error) {
+	data := make([]byte, base64.StdEncoding.DecodedLen(len(in)))
+	n, err := base64.StdEncoding.Decode(data, in)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (_ lightstepBinaryPropagator) Extract(
 	opaqueCarrier interface{},
 ) (opentracing.SpanContext, error) {
-	var scarrier string
-	var bcarrier []byte
-	switch t := opaqueCarrier.(type) {
-	case *string:
-		if t != nil {
-			scarrier = *t
-		}
-	case string:
-		scarrier = t
-	case *[]byte:
-		if t != nil {
-			bcarrier = *t
-		}
-	case []byte:
-		bcarrier = t
-	default:
-		return nil, opentracing.ErrInvalidCarrier
-	}
 	var data []byte
 	var err error
-	if bcarrier == nil {
-		data, err = base64.StdEncoding.DecodeString(scarrier)
-	} else {
-		var n int
-		data = make([]byte, base64.StdEncoding.DecodedLen(len(bcarrier)))
-		n, err = base64.StdEncoding.Decode(data, bcarrier)
-		if err == nil {
-			data = data[:n]
+
+	// Decode from string, *string, *[]byte, or []byte
+	switch carrier := opaqueCarrier.(type) {
+	case *string:
+		if carrier != nil {
+			data, err = base64.StdEncoding.DecodeString(*carrier)
 		}
+	case string:
+		data, err = base64.StdEncoding.DecodeString(carrier)
+	case *[]byte:
+		if carrier != nil {
+			data, err = decodeBase64Bytes(*carrier)
+		}
+	case []byte:
+		data, err = decodeBase64Bytes(carrier)
+	default:
+		return nil, opentracing.ErrInvalidCarrier
 	}
 	if err != nil {
 		return nil, err
 	}
 	pb := &lightstep.BinaryCarrier{}
-	err = proto.Unmarshal(data, pb)
-	if err != nil {
+	if err := proto.Unmarshal(data, pb); err != nil {
 		return nil, err
 	}
 	if pb.BasicCtx == nil {

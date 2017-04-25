@@ -25,6 +25,8 @@ import (
 	ot "github.com/opentracing/opentracing-go"
 )
 
+// TODO: Move what's left of basictracer/* into this package.
+
 const (
 	spansDropped     = "spans.dropped"
 	logEncoderErrors = "log_encoder.errors"
