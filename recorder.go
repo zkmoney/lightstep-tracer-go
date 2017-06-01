@@ -244,6 +244,23 @@ func GetLightStepAccessToken(lsTracer ot.Tracer) (string, error) {
 	}
 }
 
+type Closer interface {
+	Close() error
+}
+
+func CloseTracer(tracer ot.Tracer) error {
+	lsTracer, ok := tracer.(basictracer.Tracer)
+	if !ok {
+		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(tracer))
+	}
+	recorder, ok := lsTracer.Options().Recorder.(Closer)
+	if !ok {
+		return fmt.Errorf("Recorder does not implement Close: %v", reflect.TypeOf(recorder))
+	}
+
+	return recorder.Close()
+}
+
 // Recorder buffers spans and forwards them to a LightStep collector.
 type Recorder struct {
 	lock sync.Mutex
