@@ -5,6 +5,10 @@
 
 The LightStep distributed tracing library for Go.
 
+## Changelog
+### v0.11.0 
+* Thrift transport is now deprecated, gRPC is the default.
+
 ## Installation
 
 ```
