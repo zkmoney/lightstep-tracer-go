@@ -152,7 +152,7 @@ func TestMaxBufferSize(t *testing.T) {
 
 	_ = NewTracer(Options{
 		AccessToken: "0987654321",
-		UseGRPC:     false,
+		UseThrift:   true,
 	}).(basictracer.Tracer).Options().Recorder.(*thrift_rpc.Recorder)
 }
 

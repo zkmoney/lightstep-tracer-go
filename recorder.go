@@ -139,8 +139,11 @@ type Options struct {
 	// Set Verbose to true to enable more text logging.
 	Verbose bool `yaml:"verbose"`
 
-	// Note: flag is in use--do not change.
+	// DEPRECATED: set `UseThrift` to true if you do not want gRPC
 	UseGRPC bool `yaml:"usegrpc"`
+
+	// Switch to
+	UseThrift bool `yaml:"use_thrift"`
 
 	ReconnectPeriod time.Duration `yaml:"reconnect_period"`
 }
@@ -175,7 +178,7 @@ func (opts *Options) setDefaults() {
 func NewTracer(opts Options) ot.Tracer {
 	options := basictracer.DefaultOptions()
 
-	if opts.UseGRPC {
+	if !opts.UseThrift {
 		r := NewRecorder(opts)
 		if r == nil {
 			return ot.NoopTracer{}
