@@ -141,8 +141,8 @@ type Options struct {
 	// DEPRECATED: set `UseThrift` to true if you do not want gRPC
 	UseGRPC bool `yaml:"usegrpc"`
 
-	// Note: flag is in use--do not change.
-	UseThrift bool `yaml:"usethrift"`
+	// Switch to
+	UseThrift bool `yaml:"use_thrift"`
 
 	ReconnectPeriod time.Duration `yaml:"reconnect_period"`
 }
