@@ -484,6 +484,7 @@ func (r *Recorder) reportLoop(closech chan struct{}) {
 			}
 
 		case <-closech:
+			r.Flush()
 			return
 		}
 	}
