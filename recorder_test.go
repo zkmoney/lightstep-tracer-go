@@ -157,10 +157,31 @@ func TestMaxBufferSize(t *testing.T) {
 }
 
 func TestDoubleClose(t *testing.T) {
-	rec := NewTracer(Options{
+	tracer := NewTracer(Options{
 		AccessToken: "0987654321",
 		UseGRPC:     true,
-	}).(basictracer.Tracer).Options().Recorder.(*Recorder)
-	rec.Close()
-	rec.Close()
+	})
+	err := CloseTracer(tracer)
+	if err != nil {
+		t.Errorf("err on first close: %s", err.Error())
+	}
+	err = CloseTracer(tracer)
+	if err != nil {
+		t.Errorf("err on second close: %s", err.Error())
+	}
+}
+
+func TestDoubleCloseThrift(t *testing.T) {
+	tracer := NewTracer(Options{
+		AccessToken: "0987654321",
+		UseGRPC:     false,
+	})
+	err := CloseTracer(tracer)
+	if err != nil {
+		t.Errorf("err on first close: %s", err.Error())
+	}
+	err = CloseTracer(tracer)
+	if err != nil {
+		t.Errorf("err on second close: %s", err.Error())
+	}
 }

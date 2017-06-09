@@ -2,6 +2,7 @@ package lightstep
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"path"
@@ -247,6 +248,19 @@ func GetLightStepAccessToken(lsTracer ot.Tracer) (string, error) {
 	}
 }
 
+func CloseTracer(tracer ot.Tracer) error {
+	lsTracer, ok := tracer.(basictracer.Tracer)
+	if !ok {
+		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(tracer))
+	}
+	recorder, ok := lsTracer.Options().Recorder.(io.Closer)
+	if !ok {
+		return fmt.Errorf("Recorder does not implement Close: %v", reflect.TypeOf(recorder))
+	}
+
+	return recorder.Close()
+}
+
 // Recorder buffers spans and forwards them to a LightStep collector.
 type Recorder struct {
 	lock sync.Mutex
@@ -422,9 +436,11 @@ func (r *Recorder) Close() error {
 	r.conn = nil
 	r.closech = nil
 	r.lock.Unlock()
+
 	if closech != nil {
 		close(closech)
 	}
+
 	if conn == nil {
 		return nil
 	}
@@ -725,6 +741,7 @@ func (r *Recorder) reportLoop(closech chan struct{}) {
 				r.reconnectClient(now)
 			}
 		case <-closech:
+			r.Flush()
 			return
 		}
 	}
