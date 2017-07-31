@@ -26,7 +26,7 @@ func FlushLightStepTracer(lsTracer ot.Tracer) error {
 		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(lsTracer))
 	}
 
-	tracer.Flush()
+	tracer.Flush(context.Background())
 	return nil
 }
 
@@ -47,7 +47,8 @@ func CloseTracer(tracer ot.Tracer) error {
 		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(tracer))
 	}
 
-	return lsTracer.Close()
+	lsTracer.Close(context.Background())
+	return nil
 }
 
 // Implements the `Tracer` interface. Buffers spans and forwards the to a Lightstep collector.
@@ -197,7 +198,7 @@ func (r *tracerImpl) reconnectClient(now time.Time) {
 }
 
 // Close flushes and then terminates the LightStep collector.
-func (r *tracerImpl) Close() error {
+func (r *tracerImpl) Close(ctx context.Context) {
 	r.lock.Lock()
 	closech := r.closech
 	r.closech = nil
@@ -209,7 +210,14 @@ func (r *tracerImpl) Close() error {
 
 		// wait for report loop to finish
 		if r.reportLoopch != nil {
-			<-r.reportLoopch
+			select {
+			case <-r.reportLoopch:
+				// continue
+			case <-ctx.Done():
+				// context was canceled, abort
+				r.onError(ctx.Err())
+				return
+			}
 		}
 	}
 
@@ -220,11 +228,12 @@ func (r *tracerImpl) Close() error {
 	r.reportLoopch = nil
 	r.lock.Unlock()
 
-	if conn == nil {
-		return nil
+	if conn != nil {
+		err := conn.Close()
+		if err != nil {
+			r.onError(err)
+		}
 	}
-
-	return conn.Close()
 }
 
 // RecordSpan records a finished Span.
@@ -245,7 +254,7 @@ func (r *tracerImpl) RecordSpan(raw RawSpan) {
 }
 
 // Flush sends all buffered data to the collector.
-func (r *tracerImpl) Flush() {
+func (r *tracerImpl) Flush(ctx context.Context) {
 	r.flushingLock.Lock()
 	defer r.flushingLock.Unlock()
 
@@ -330,6 +339,12 @@ func (r *tracerImpl) Disable() {
 	r.disabled = true
 }
 
+func (impl *tracerImpl) onError(err error) {
+	if impl.opts.OnError != nil {
+		impl.opts.OnError(err)
+	}
+}
+
 // Every MinReportingPeriod the reporting loop wakes up and checks to see if
 // either (a) the Runtime's max reporting period is about to expire (see
 // maxReportingPeriod()), (b) the number of buffered log records is
@@ -373,13 +388,13 @@ func (r *tracerImpl) reportLoop(closech chan struct{}) {
 				return
 			}
 			if shouldFlush {
-				r.Flush()
+				r.Flush(context.Background())
 			}
 			if reconnect {
 				r.reconnectClient(now)
 			}
 		case <-closech:
-			r.Flush()
+			r.Flush(context.Background())
 			return
 		}
 	}
