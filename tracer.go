@@ -134,6 +134,7 @@ func NewTracer(opts Options) Tracer {
 
 	if err != nil {
 		fmt.Println("Failed to connect to Collector!", err)
+		impl.onError(err)
 		return nil
 	}
 
@@ -185,7 +186,7 @@ func (t *tracerImpl) Extract(format interface{}, carrier interface{}) (ot.SpanCo
 func (r *tracerImpl) reconnectClient(now time.Time) {
 	conn, err := r.client.ConnectClient()
 	if err != nil {
-		maybeLogInfof("could not reconnect client", r.opts.Verbose)
+		r.onError(err)
 	} else {
 		r.lock.Lock()
 		oldConn := r.conn
@@ -260,7 +261,7 @@ func (r *tracerImpl) Flush(ctx context.Context) {
 
 	err := r.preFlush()
 	if err != nil {
-		maybeLogError(err, r.opts.Verbose)
+		r.onError(err)
 		return
 	}
 
@@ -268,9 +269,7 @@ func (r *tracerImpl) Flush(ctx context.Context) {
 	defer cancel()
 	resp, err := r.client.Report(ctx, &r.flushing)
 
-	if err != nil {
-		maybeLogError(err, r.opts.Verbose)
-	} else if len(resp.GetErrors()) > 0 {
+	if err == nil && len(resp.GetErrors()) > 0 {
 		// These should never occur, since this library should understand what
 		// makes for valid logs and spans, but just in case, log it anyway.
 		for _, err := range resp.GetErrors() {
@@ -310,6 +309,7 @@ func (r *tracerImpl) postFlush(resp collectorResponse, err error) {
 	defer r.lock.Unlock()
 	r.reportInFlight = false
 	if err != nil {
+		r.onError(err)
 		// Restore the records that did not get sent correctly
 		r.buffer.mergeFrom(&r.flushing)
 	} else {
@@ -340,6 +340,7 @@ func (r *tracerImpl) Disable() {
 }
 
 func (impl *tracerImpl) onError(err error) {
+	maybeLogError(err, impl.opts.Verbose)
 	if impl.opts.OnError != nil {
 		impl.opts.OnError(err)
 	}
