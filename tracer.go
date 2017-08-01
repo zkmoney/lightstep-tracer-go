@@ -152,8 +152,8 @@ func NewTracer(opts Options) Tracer {
 	return impl
 }
 
-func (impl *tracerImpl) Options() Options {
-	return impl.opts
+func (t *tracerImpl) Options() Options {
+	return t.opts
 }
 
 func (t *tracerImpl) StartSpan(
@@ -183,103 +183,103 @@ func (t *tracerImpl) Extract(format interface{}, carrier interface{}) (ot.SpanCo
 	return nil, ot.ErrUnsupportedFormat
 }
 
-func (r *tracerImpl) reconnectClient(now time.Time) {
-	conn, err := r.client.ConnectClient()
+func (t *tracerImpl) reconnectClient(now time.Time) {
+	conn, err := t.client.ConnectClient()
 	if err != nil {
-		r.onError(err)
+		t.onError(err)
 	} else {
-		r.lock.Lock()
-		oldConn := r.conn
-		r.conn = conn
-		r.lock.Unlock()
+		t.lock.Lock()
+		oldConn := t.conn
+		t.conn = conn
+		t.lock.Unlock()
 
 		oldConn.Close()
-		maybeLogInfof("reconnected client connection", r.opts.Verbose)
+		maybeLogInfof("reconnected client connection", t.opts.Verbose)
 	}
 }
 
 // Close flushes and then terminates the LightStep collector.
-func (r *tracerImpl) Close(ctx context.Context) {
-	r.lock.Lock()
-	closech := r.closech
-	r.closech = nil
-	r.lock.Unlock()
+func (t *tracerImpl) Close(ctx context.Context) {
+	t.lock.Lock()
+	closech := t.closech
+	t.closech = nil
+	t.lock.Unlock()
 
 	if closech != nil {
 		// notify report loop that we are closing
 		close(closech)
 
 		// wait for report loop to finish
-		if r.reportLoopch != nil {
+		if t.reportLoopch != nil {
 			select {
-			case <-r.reportLoopch:
+			case <-t.reportLoopch:
 				// continue
 			case <-ctx.Done():
 				// context was canceled, abort
-				r.onError(ctx.Err())
+				t.onError(ctx.Err())
 				return
 			}
 		}
 	}
 
 	// now its safe to close the connection
-	r.lock.Lock()
-	conn := r.conn
-	r.conn = nil
-	r.reportLoopch = nil
-	r.lock.Unlock()
+	t.lock.Lock()
+	conn := t.conn
+	t.conn = nil
+	t.reportLoopch = nil
+	t.lock.Unlock()
 
 	if conn != nil {
 		err := conn.Close()
 		if err != nil {
-			r.onError(err)
+			t.onError(err)
 		}
 	}
 }
 
 // RecordSpan records a finished Span.
-func (r *tracerImpl) RecordSpan(raw RawSpan) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (t *tracerImpl) RecordSpan(raw RawSpan) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
 	// Early-out for disabled runtimes
-	if r.disabled {
+	if t.disabled {
 		return
 	}
 
-	r.buffer.addSpan(raw)
+	t.buffer.addSpan(raw)
 
-	if r.opts.Recorder != nil {
-		r.opts.Recorder.RecordSpan(raw)
+	if t.opts.Recorder != nil {
+		t.opts.Recorder.RecordSpan(raw)
 	}
 }
 
 // Flush sends all buffered data to the collector.
-func (r *tracerImpl) Flush(ctx context.Context) {
-	r.flushingLock.Lock()
-	defer r.flushingLock.Unlock()
+func (t *tracerImpl) Flush(ctx context.Context) {
+	t.flushingLock.Lock()
+	defer t.flushingLock.Unlock()
 
-	err := r.preFlush()
+	err := t.preFlush()
 	if err != nil {
-		r.onError(err)
+		t.onError(err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), r.opts.ReportTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), t.opts.ReportTimeout)
 	defer cancel()
-	resp, err := r.client.Report(ctx, &r.flushing)
+	resp, err := t.client.Report(ctx, &t.flushing)
 
 	if err == nil && len(resp.GetErrors()) > 0 {
 		// These should never occur, since this library should understand what
 		// makes for valid logs and spans, but just in case, log it anyway.
 		for _, err := range resp.GetErrors() {
-			maybeLogError(fmt.Errorf("Remote report returned error: %s", err), r.opts.Verbose)
+			maybeLogError(fmt.Errorf("Remote report returned error: %s", err), t.opts.Verbose)
 		}
 	} else {
-		maybeLogInfof("Report: resp=%v, err=%v", r.opts.Verbose, resp, err)
+		maybeLogInfof("Report: resp=%v, err=%v", t.opts.Verbose, resp, err)
 	}
 
-	r.postFlush(resp, err)
+	t.postFlush(resp, err)
 }
 
 func (r *tracerImpl) preFlush() error {
@@ -303,46 +303,46 @@ func (r *tracerImpl) preFlush() error {
 	return nil
 }
 
-func (r *tracerImpl) postFlush(resp collectorResponse, err error) {
+func (t *tracerImpl) postFlush(resp collectorResponse, err error) {
 	var droppedSent int64
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.reportInFlight = false
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	t.reportInFlight = false
 	if err != nil {
-		r.onError(err)
+		t.onError(err)
 		// Restore the records that did not get sent correctly
-		r.buffer.mergeFrom(&r.flushing)
+		t.buffer.mergeFrom(&t.flushing)
 	} else {
-		droppedSent = r.flushing.droppedSpanCount
-		r.flushing.clear()
+		droppedSent = t.flushing.droppedSpanCount
+		t.flushing.clear()
 
 		if resp.Disable() {
-			r.Disable()
+			t.Disable()
 		}
 	}
 	if droppedSent != 0 {
-		maybeLogInfof("client reported %d dropped spans", r.opts.Verbose, droppedSent)
+		maybeLogInfof("client reported %d dropped spans", t.opts.Verbose, droppedSent)
 	}
 }
 
-func (r *tracerImpl) Disable() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (t *tracerImpl) Disable() {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
-	if r.disabled {
+	if t.disabled {
 		return
 	}
 
-	fmt.Printf("Disabling Runtime instance: %p", r)
+	fmt.Printf("Disabling Runtime instance: %p", t)
 
-	r.buffer.clear()
-	r.disabled = true
+	t.buffer.clear()
+	t.disabled = true
 }
 
-func (impl *tracerImpl) onError(err error) {
-	maybeLogError(err, impl.opts.Verbose)
-	if impl.opts.OnError != nil {
-		impl.opts.OnError(err)
+func (t *tracerImpl) onError(err error) {
+	maybeLogError(err, t.opts.Verbose)
+	if t.opts.OnError != nil {
+		t.opts.OnError(err)
 	}
 }
 
@@ -359,43 +359,43 @@ func (impl *tracerImpl) onError(err error) {
 // runtime library, and we want to avoid that at all costs (even dropping data,
 // which can certainly happen with high data rates and/or unresponsive remote
 // peers).
-func (r *tracerImpl) shouldFlushLocked(now time.Time) bool {
-	if now.Add(r.opts.MinReportingPeriod).Sub(r.lastReportAttempt) > r.opts.ReportingPeriod {
+func (t *tracerImpl) shouldFlushLocked(now time.Time) bool {
+	if now.Add(t.opts.MinReportingPeriod).Sub(t.lastReportAttempt) > t.opts.ReportingPeriod {
 		// Flush timeout.
-		maybeLogInfof("--> timeout", r.opts.Verbose)
+		maybeLogInfof("--> timeout", t.opts.Verbose)
 		return true
-	} else if r.buffer.isHalfFull() {
+	} else if t.buffer.isHalfFull() {
 		// Too many queued span records.
-		maybeLogInfof("--> span queue", r.opts.Verbose)
+		maybeLogInfof("--> span queue", t.opts.Verbose)
 		return true
 	}
 	return false
 }
 
-func (r *tracerImpl) reportLoop(closech chan struct{}) {
-	tickerChan := time.Tick(r.opts.MinReportingPeriod)
+func (t *tracerImpl) reportLoop(closech chan struct{}) {
+	tickerChan := time.Tick(t.opts.MinReportingPeriod)
 	for {
 		select {
 		case <-tickerChan:
 			now := time.Now()
 
-			r.lock.Lock()
-			disabled := r.disabled
-			reconnect := !r.reportInFlight && r.client.ShouldReconnect()
-			shouldFlush := r.shouldFlushLocked(now)
-			r.lock.Unlock()
+			t.lock.Lock()
+			disabled := t.disabled
+			reconnect := !t.reportInFlight && t.client.ShouldReconnect()
+			shouldFlush := t.shouldFlushLocked(now)
+			t.lock.Unlock()
 
 			if disabled {
 				return
 			}
 			if shouldFlush {
-				r.Flush(context.Background())
+				t.Flush(context.Background())
 			}
 			if reconnect {
-				r.reconnectClient(now)
+				t.reconnectClient(now)
 			}
 		case <-closech:
-			r.Flush(context.Background())
+			t.Flush(context.Background())
 			return
 		}
 	}
