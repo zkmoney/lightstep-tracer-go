@@ -119,6 +119,8 @@ type tracerImpl struct {
 func NewTracer(opts Options) Tracer {
 	err := opts.Initialize()
 	if err != nil {
+		// TODO: don't feel comfortable trying to call opts.OnError here since opts.Initialize failed somehow
+		// but shouldn't just return nil. Function should be `func NewTracer(Options) (Tracer, error)`
 		fmt.Println(err.Error())
 		return nil
 	}
@@ -153,6 +155,8 @@ func NewTracer(opts Options) Tracer {
 	if err != nil {
 		fmt.Println("Failed to connect to Collector!", err)
 		impl.onError(err)
+		// TODO: should we still return impl here even though it failed to connect?
+		// See above todo. Should probably return impl and err
 		return nil
 	}
 
