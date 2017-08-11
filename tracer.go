@@ -29,8 +29,8 @@ func FlushLightStepTracer(lsTracer ot.Tracer, ctx ...context.Context) error {
 	if len(ctx) > 1 {
 		return fmt.Errorf("context vargs are for backwards compatability. Only one context may be provided, got %v", len(ctx))
 	}
-	flushCtx := context.Background()
 
+	flushCtx := context.Background()
 	if len(ctx) == 1 {
 		flushCtx = ctx[0]
 	}
