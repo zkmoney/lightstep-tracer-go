@@ -282,24 +282,24 @@ func (t *tracerImpl) Flush(ctx context.Context) {
 	t.postFlush(resp, err)
 }
 
-func (r *tracerImpl) preFlush() error {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (t *tracerImpl) preFlush() error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
-	if r.disabled {
+	if t.disabled {
 		return errTracerDisabled
 	}
 
-	if r.conn == nil {
+	if t.conn == nil {
 		return errConnectionWasClosed
 	}
 
 	now := time.Now()
-	r.buffer, r.flushing = r.flushing, r.buffer
-	r.reportInFlight = true
-	r.flushing.setFlushing(now)
-	r.buffer.setCurrent(now)
-	r.lastReportAttempt = now
+	t.buffer, t.flushing = t.flushing, t.buffer
+	t.reportInFlight = true
+	t.flushing.setFlushing(now)
+	t.buffer.setCurrent(now)
+	t.lastReportAttempt = now
 	return nil
 }
 
