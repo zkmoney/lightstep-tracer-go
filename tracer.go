@@ -265,7 +265,7 @@ func (t *tracerImpl) Flush(ctx context.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), t.opts.ReportTimeout)
+	ctx, cancel := context.WithTimeout(ctx, t.opts.ReportTimeout)
 	defer cancel()
 	resp, err := t.client.Report(ctx, &t.flushing)
 
