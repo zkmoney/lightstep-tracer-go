@@ -143,14 +143,10 @@ type Options struct {
 // Initialize validates options, and sets default values for unset options.
 // This is called automatically when creating a new Tracer.
 func (opts *Options) Initialize() error {
-	if len(opts.AccessToken) == 0 {
-		return fmt.Errorf("LightStep Recorder options.AccessToken must not be empty")
+	err := opts.Validate()
+	if err != nil {
+		return err
 	}
-
-	if _, found := opts.Tags[GUIDKey]; found {
-		return fmt.Errorf("Passing in your own %v is no longer supported\n", GUIDKey)
-	}
-
 	// Note: opts is a copy of the user's data, ok to modify.
 	if opts.MaxBufferedSpans == 0 {
 		opts.MaxBufferedSpans = DefaultMaxSpans
@@ -208,6 +204,18 @@ func (opts *Options) Initialize() error {
 		} else {
 			opts.Collector.Port = DefaultSecurePort
 		}
+	}
+
+	return nil
+}
+
+func (opts *Options) Validate() error {
+	if len(opts.AccessToken) == 0 {
+		return fmt.Errorf("LightStep Recorder options.AccessToken must not be empty")
+	}
+
+	if _, found := opts.Tags[GUIDKey]; found {
+		return fmt.Errorf("Passing in your own %v is no longer supported\n", GUIDKey)
 	}
 
 	return nil
