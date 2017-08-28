@@ -181,8 +181,6 @@ func (t *tracerImpl) Close(ctx context.Context) {
 			case <-t.reportLoopch:
 				// continue
 			case <-ctx.Done():
-				// context was canceled, abort
-				t.onError(ctx.Err())
 				return
 			}
 		}
