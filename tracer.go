@@ -237,7 +237,7 @@ func (t *tracerImpl) Flush(ctx context.Context) {
 		// These should never occur, since this library should understand what
 		// makes for valid logs and spans, but just in case, log it anyway.
 		for _, err := range resp.GetErrors() {
-			maybeLogError(fmt.Errorf("Remote report returned error: %s", err), t.opts.Verbose)
+			t.onError(fmt.Errorf("Remote report returned error: %s", err))
 		}
 	} else {
 		maybeLogInfof("Report: resp=%v, err=%v", t.opts.Verbose, resp, err)
