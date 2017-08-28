@@ -21,22 +21,13 @@ var (
 )
 
 // FlushLightStepTracer forces a synchronous Flush.
-func FlushLightStepTracer(lsTracer ot.Tracer, ctx ...context.Context) error {
+func FlushLightStepTracer(lsTracer ot.Tracer) error {
 	tracer, ok := lsTracer.(Tracer)
 	if !ok {
 		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(lsTracer))
 	}
 
-	if len(ctx) > 1 {
-		return fmt.Errorf("context vargs are for backwards compatability. Only one context may be provided, got %v", len(ctx))
-	}
-
-	flushCtx := context.Background()
-	if len(ctx) == 1 {
-		flushCtx = ctx[0]
-	}
-
-	tracer.Flush(flushCtx)
+	tracer.Flush(context.Background())
 	return nil
 }
 
@@ -51,22 +42,13 @@ func GetLightStepAccessToken(lsTracer ot.Tracer) (string, error) {
 }
 
 // CloseTracer synchronously flushes the tracer, then terminates it.
-func CloseTracer(tracer ot.Tracer, ctx ...context.Context) error {
+func CloseTracer(tracer ot.Tracer) error {
 	lsTracer, ok := tracer.(Tracer)
 	if !ok {
 		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(tracer))
 	}
 
-	if len(ctx) > 1 {
-		return fmt.Errorf("context vargs are for backwards compatability. Only one context may be provided, got %v", len(ctx))
-	}
-
-	closeCtx := context.Background()
-	if len(ctx) == 1 {
-		closeCtx = ctx[0]
-	}
-
-	lsTracer.Close(closeCtx)
+	lsTracer.Close(context.Background())
 	return nil
 }
 
