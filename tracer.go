@@ -13,12 +13,6 @@ import (
 	ot "github.com/opentracing/opentracing-go"
 )
 
-var (
-	errPreviousReportInFlight = fmt.Errorf("a previous Report is still in flight; aborting Flush()")
-	errConnectionWasClosed    = fmt.Errorf("the connection was closed")
-	errTracerDisabled         = fmt.Errorf("tracer is disabled; aborting Flush()")
-)
-
 // Implements the `Tracer` interface. Buffers spans and forwards the to a Lightstep collector.
 type tracerImpl struct {
 	//////////////////////////////////////////////////////////////
