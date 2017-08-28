@@ -179,7 +179,7 @@ func (t *tracerImpl) Close(ctx context.Context) {
 		if t.reportLoopch != nil {
 			select {
 			case <-t.reportLoopch:
-				// continue
+				t.Flush(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -359,7 +359,6 @@ func (t *tracerImpl) reportLoop(closech chan struct{}) {
 				t.reconnectClient(now)
 			}
 		case <-closech:
-			t.Flush(context.Background())
 			return
 		}
 	}
