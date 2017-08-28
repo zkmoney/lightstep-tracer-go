@@ -19,7 +19,7 @@ import (
 var _ = Describe("SpanRecorder", func() {
 	var tracer Tracer
 
-	Describe("FlushLightstepTracer", func() {
+	Describe("Flush", func() {
 		var fakeClient *cpbfakes.FakeCollectorServiceClient
 		var cancelch chan struct{}
 		var startTestch chan bool
@@ -86,7 +86,7 @@ var _ = Describe("SpanRecorder", func() {
 
 				finishedch := make(chan struct{})
 				go func() {
-					FlushLightStepTracer(tracer)
+					Flush(context.Background(), tracer)
 					close(finishedch)
 				}()
 				// flush should wait for the last report to finish
@@ -104,7 +104,7 @@ var _ = Describe("SpanRecorder", func() {
 
 	})
 
-	Context("CloseLightstepTracer", func() {
+	Context("Close", func() {
 		var fakeClient *cpbfakes.FakeCollectorServiceClient
 
 		BeforeEach(func() {
