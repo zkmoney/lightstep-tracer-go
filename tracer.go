@@ -3,7 +3,6 @@ package lightstep
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"time"
 
 	"golang.org/x/net/context"
@@ -19,38 +18,6 @@ var (
 	errConnectionWasClosed    = fmt.Errorf("the connection was closed")
 	errTracerDisabled         = fmt.Errorf("tracer is disabled; aborting Flush()")
 )
-
-// FlushLightStepTracer forces a synchronous Flush.
-func FlushLightStepTracer(lsTracer ot.Tracer) error {
-	tracer, ok := lsTracer.(Tracer)
-	if !ok {
-		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(lsTracer))
-	}
-
-	tracer.Flush(context.Background())
-	return nil
-}
-
-// GetLightStepAccessToken returns the currently configured AccessToken.
-func GetLightStepAccessToken(lsTracer ot.Tracer) (string, error) {
-	tracer, ok := lsTracer.(Tracer)
-	if !ok {
-		return "", fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(lsTracer))
-	}
-
-	return tracer.Options().AccessToken, nil
-}
-
-// CloseTracer synchronously flushes the tracer, then terminates it.
-func CloseTracer(tracer ot.Tracer) error {
-	lsTracer, ok := tracer.(Tracer)
-	if !ok {
-		return fmt.Errorf("Not a LightStep Tracer type: %v", reflect.TypeOf(tracer))
-	}
-
-	lsTracer.Close(context.Background())
-	return nil
-}
 
 // Implements the `Tracer` interface. Buffers spans and forwards the to a Lightstep collector.
 type tracerImpl struct {
