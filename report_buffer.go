@@ -4,12 +4,19 @@ import (
 	"time"
 )
 
+type droppedSpans struct {
+	droppedSpanCountTotal           int64
+	droppedSpanCountBufferFull      int64
+	droppedSpanCountCollectorServer int64
+	droppedSpanCountCollectorClient int64
+}
+
 type reportBuffer struct {
 	rawSpans             []RawSpan
-	droppedSpanCount     int64
 	logEncoderErrorCount int64
-	reportStart          time.Time
-	reportEnd            time.Time
+	droppedSpans
+	reportStart time.Time
+	reportEnd   time.Time
 }
 
 func newSpansBuffer(size int) (b reportBuffer) {
@@ -37,22 +44,34 @@ func (b *reportBuffer) clear() {
 	b.reportStart = time.Time{}
 	b.reportEnd = time.Time{}
 	b.droppedSpanCount = 0
+	b.droppedSpanCountBufferFull = 0
+	b.droppedSpanCountCollectorServer = 0
+	b.droppedSpanCountCollectorClient = 0
 	b.logEncoderErrorCount = 0
 }
 
 func (b *reportBuffer) addSpan(span RawSpan) {
 	if len(b.rawSpans) == cap(b.rawSpans) {
-		b.droppedSpanCount++
+		b.droppedSpanCountBufferFull++
 		return
 	}
 	b.rawSpans = append(b.rawSpans, span)
+}
+
+func mergeDroppedSpans(a droppedSpans, b droppedSpans) droppedSpans {
+	return droppedSpans{
+		droppedSpanCount:                a.droppedSpanCount + b.droppedSpanCount,
+		droppedSpanCountBufferFull:      a.droppedSpanCountBufferFull + b.droppedSpanCountBufferFull,
+		droppedSpanCountCollectorServer: a.droppedSpanCountCollectorServer + b.droppedSpanCountCollectorServer,
+		droppedSpanCountCollectorClient: a.droppedSpanCountCollectorClient + b.droppedSpanCountCollectorClient,
+	}
 }
 
 // mergeFrom combines the spans and metadata in `from` with `into`,
 // returning with `from` empty and `into` having a subset of the
 // combined data.
 func (into *reportBuffer) mergeFrom(from *reportBuffer) {
-	into.droppedSpanCount += from.droppedSpanCount
+	into.droppedSpans = mergeDroppedSpans(into.droppedSpans, from.droppedSpans)
 	into.logEncoderErrorCount += from.logEncoderErrorCount
 	if from.reportStart.Before(into.reportStart) {
 		into.reportStart = from.reportStart

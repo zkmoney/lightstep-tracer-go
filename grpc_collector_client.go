@@ -19,8 +19,11 @@ import (
 )
 
 const (
-	spansDropped     = "spans.dropped"
-	logEncoderErrors = "log_encoder.errors"
+	spansDropped          = "spans.dropped"
+	logEncoderErrors      = "log_encoder.errors"
+	reasonBufferFull      = "#buffer_full"
+	reasonClientServer    = "#collector_server_error"
+	reasonCollectorClient = "#collector_client_error"
 )
 
 var (
@@ -216,8 +219,16 @@ func convertToReporter(atts map[string]string, id uint64) *cpb.Reporter {
 func generateMetricsSample(b *reportBuffer) []*cpb.MetricsSample {
 	return []*cpb.MetricsSample{
 		&cpb.MetricsSample{
-			Name:  spansDropped,
-			Value: &cpb.MetricsSample_IntValue{IntValue: b.droppedSpanCount},
+			Name:  spansDropped + reasonBufferFull,
+			Value: &cpb.MetricsSample_IntValue{IntValue: b.droppedSpanCountBufferFull},
+		},
+		&cpb.MetricsSample{
+			Name:  spansDropped + reasonClientServer,
+			Value: &cpb.MetricsSample_IntValue{IntValue: b.droppedSpanCountCollectorServer},
+		},
+		&cpb.MetricsSample{
+			Name:  spansDropped + reasonCollectorClient,
+			Value: &cpb.MetricsSample_IntValue{IntValue: b.droppedSpanCountCollectorClient},
 		},
 		&cpb.MetricsSample{
 			Name:  logEncoderErrors,
