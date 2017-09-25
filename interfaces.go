@@ -12,8 +12,8 @@ type Connection interface {
 	io.Closer
 }
 
-// ConnectorFactory is for testing purposes.
-type ConnectorFactory func() (interface{}, Connection, error)
+// ConnectionFactory is for testing purposes.
+type ConnectionFactory func() (interface{}, Connection, error)
 
 // collectorResponse encapsulates internal thrift/grpc responses.
 type collectorResponse interface {

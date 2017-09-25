@@ -43,7 +43,7 @@ type thriftCollectorClient struct {
 
 	reportTimeout time.Duration
 
-	thriftConnectorFactory ConnectorFactory
+	thriftConnectionFactory ConnectionFactory
 }
 
 func newThriftCollectorClient(opts Options, guid uint64, attributes map[string]string) *thriftCollectorClient {
@@ -57,17 +57,17 @@ func newThriftCollectorClient(opts Options, guid uint64, attributes map[string]s
 		auth: &lightstep_thrift.Auth{
 			AccessToken: thrift.StringPtr(opts.AccessToken),
 		},
-		attributes:             attributes,
-		startTime:              now,
-		maxReportingPeriod:     opts.ReportingPeriod,
-		verbose:                opts.Verbose,
-		collectorURL:           opts.Collector.URL(),
-		AccessToken:            opts.AccessToken,
-		maxLogMessageLen:       opts.MaxLogValueLen,
-		maxLogKeyLen:           opts.MaxLogKeyLen,
-		reportTimeout:          reportTimeout,
-		thriftConnectorFactory: opts.ConnFactory,
-		reporterID:             guid,
+		attributes:              attributes,
+		startTime:               now,
+		maxReportingPeriod:      opts.ReportingPeriod,
+		verbose:                 opts.Verbose,
+		collectorURL:            opts.Collector.URL(),
+		AccessToken:             opts.AccessToken,
+		maxLogMessageLen:        opts.MaxLogValueLen,
+		maxLogKeyLen:            opts.MaxLogKeyLen,
+		reportTimeout:           reportTimeout,
+		thriftConnectionFactory: opts.ConnFactory,
+		reporterID:              guid,
 	}
 	return rec
 }
@@ -75,8 +75,8 @@ func newThriftCollectorClient(opts Options, guid uint64, attributes map[string]s
 func (client *thriftCollectorClient) ConnectClient() (Connection, error) {
 	var conn Connection
 
-	if client.thriftConnectorFactory != nil {
-		unchecked_client, transport, err := client.thriftConnectorFactory()
+	if client.thriftConnectionFactory != nil {
+		unchecked_client, transport, err := client.thriftConnectionFactory()
 		if err != nil {
 			return nil, err
 		}

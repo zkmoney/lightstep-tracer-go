@@ -52,22 +52,22 @@ type grpcCollectorClient struct {
 	dialOptions   []grpc.DialOption
 
 	// For testing purposes only
-	grpcConnectorFactory ConnectorFactory
+	grpcConnectionFactory ConnectionFactory
 }
 
 func newGrpcCollectorClient(opts Options, reporterID uint64, attributes map[string]string) *grpcCollectorClient {
 	rec := &grpcCollectorClient{
-		accessToken:          opts.AccessToken,
-		attributes:           attributes,
-		maxReportingPeriod:   opts.ReportingPeriod,
-		reportingTimeout:     opts.ReportTimeout,
-		verbose:              opts.Verbose,
-		maxLogKeyLen:         opts.MaxLogKeyLen,
-		maxLogValueLen:       opts.MaxLogValueLen,
-		reporterID:           reporterID,
-		hostPort:             opts.Collector.HostPort(),
-		reconnectPeriod:      time.Duration(float64(opts.ReconnectPeriod) * (1 + 0.2*rand.Float64())),
-		grpcConnectorFactory: opts.ConnFactory,
+		accessToken:           opts.AccessToken,
+		attributes:            attributes,
+		maxReportingPeriod:    opts.ReportingPeriod,
+		reportingTimeout:      opts.ReportTimeout,
+		verbose:               opts.Verbose,
+		maxLogKeyLen:          opts.MaxLogKeyLen,
+		maxLogValueLen:        opts.MaxLogValueLen,
+		reporterID:            reporterID,
+		hostPort:              opts.Collector.HostPort(),
+		reconnectPeriod:       time.Duration(float64(opts.ReconnectPeriod) * (1 + 0.2*rand.Float64())),
+		grpcConnectionFactory: opts.ConnFactory,
 	}
 
 	rec.dialOptions = append(rec.dialOptions, grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(opts.GRPCMaxCallSendMsgSizeBytes)))
@@ -83,8 +83,8 @@ func newGrpcCollectorClient(opts Options, reporterID uint64, attributes map[stri
 func (client *grpcCollectorClient) ConnectClient() (Connection, error) {
 	now := time.Now()
 	var conn Connection
-	if client.grpcConnectorFactory != nil {
-		uncheckedClient, transport, err := client.grpcConnectorFactory()
+	if client.grpcConnectionFactory != nil {
+		uncheckedClient, transport, err := client.grpcConnectionFactory()
 		if err != nil {
 			return nil, err
 		}

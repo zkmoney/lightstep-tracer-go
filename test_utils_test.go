@@ -107,7 +107,7 @@ type dummyConnection struct{}
 
 func (*dummyConnection) Close() error { return nil }
 
-func fakeGrpcConnection(fakeClient *cpbfakes.FakeCollectorServiceClient) ConnectorFactory {
+func fakeGrpcConnection(fakeClient *cpbfakes.FakeCollectorServiceClient) ConnectionFactory {
 	return func() (interface{}, Connection, error) {
 		return fakeClient, new(dummyConnection), nil
 	}
@@ -170,7 +170,7 @@ func getReportedThriftSpans(fakeClient *thriftfakes.FakeReportingService) []*lig
 	return spans
 }
 
-func fakeThriftConnectionFactory(fakeClient lightstep_thrift.ReportingService) ConnectorFactory {
+func fakeThriftConnectionFactory(fakeClient lightstep_thrift.ReportingService) ConnectionFactory {
 	return func() (interface{}, Connection, error) {
 		return fakeClient, new(dummyConnection), nil
 	}
