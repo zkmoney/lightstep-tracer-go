@@ -82,8 +82,10 @@ func newHttpClient(timeout time.Duration) *http.Client {
 		// Setting a non-nil Transport means that each client will get its own
 		// idle connection pool.  This is way more stable than sharing a single
 		// pool for this entire server.
-		Transport: &http.Transport{}, // TODO set additional (TLS?) timeouts?
-		Timeout:   timeout,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		}, // TODO set additional (TLS?) timeouts?
+		Timeout: timeout,
 	}
 }
 
